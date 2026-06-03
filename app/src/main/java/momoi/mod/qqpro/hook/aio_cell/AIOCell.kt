@@ -14,8 +14,10 @@ import com.tencent.watch.aio_impl.ui.cell.unsupport.WatchToQQViewMsgItem
 import com.tencent.watch.aio_impl.ui.widget.AIOCellGroupWidget
 import momoi.anno.mixin.Mixin
 import momoi.mod.qqpro.enums.NTMsgType
+import momoi.mod.qqpro.Settings
 import momoi.mod.qqpro.hook.action.CurrentContact
 import momoi.mod.qqpro.hook.action.CurrentGroupMembers
+import momoi.mod.qqpro.hook.action.CurrentMsgList
 import momoi.mod.qqpro.hook.action.isGroup
 import momoi.mod.qqpro.lib.create
 import momoi.mod.qqpro.util.linkify
@@ -120,11 +122,39 @@ object AIOCell {
             if (CurrentContact.isGroup) {
                 val senderUid = item.d.senderUid
                 val nickView = widget.getNickWidget<TextView>()
-                nickView?.tag = senderUid
-                CurrentGroupMembers.get(senderUid) { member ->
-                    widget.post {
-                        if (widget.getNickWidget<TextView>()?.tag == senderUid) {
-                            GroupAvatarHook.update(widget, item.d, member)
+                // hide the avatar/nick header when the previous (older) message in
+                // the list is from the same sender, so consecutive messages only
+                // show the header once.
+                val hideHeader = Settings.hideRepeatedSender.value && run {
+                    val idx = CurrentMsgList.getMsgIndex(item)
+                    val prev = CurrentMsgList.msgList.value.getOrNull(idx - 1)
+                    prev != null && prev.d.senderUid == senderUid
+                }
+                if (hideHeader) {
+                    // Keep the view VISIBLE so the widget's onMeasure measures it
+                    // (it reads getMeasuredHeight() ignoring visibility); collapse
+                    // it to zero height instead. Using GONE would leave a stale
+                    // measured height and cause random large gaps.
+                    nickView?.let {
+                        it.tag = null
+                        it.visibility = View.VISIBLE
+                        it.text = ""
+                        it.setCompoundDrawables(null, null, null, null)
+                        it.layoutParams = it.layoutParams?.apply { height = 0 }
+                    }
+                } else {
+                    nickView?.let {
+                        it.visibility = View.VISIBLE
+                        it.layoutParams = it.layoutParams?.apply {
+                            height = ViewGroup.LayoutParams.WRAP_CONTENT
+                        }
+                        it.tag = senderUid
+                    }
+                    CurrentGroupMembers.get(senderUid) { member ->
+                        widget.post {
+                            if (widget.getNickWidget<TextView>()?.tag == senderUid) {
+                                GroupAvatarHook.update(widget, item.d, member)
+                            }
                         }
                     }
                 }

@@ -12,6 +12,7 @@ object Settings {
     val blockBack = BooleanPref("blockBack", false)
     val swapCenterKeyboard = BooleanPref("swapCenterKeyboard", false)
     val showGroupAvatar = BooleanPref("showGroupAvatar", false)
+    val hideRepeatedSender = BooleanPref("hideRepeatedSender", false)
     val inlineSendButton = BooleanPref("inlineSendButton", false)
     val inlineChatInput = BooleanPref("inlineChatInput", false)
 

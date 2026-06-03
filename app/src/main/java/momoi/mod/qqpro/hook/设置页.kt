@@ -89,6 +89,11 @@ class 设置页 : SettingsActivity() {
                 Settings.showGroupAvatar
             )
             switch(
+                "合并连续消息头",
+                "同一人连发多条时，只在第一条显示头像和昵称",
+                Settings.hideRepeatedSender
+            )
+            switch(
                 "行内发送按钮",
                 "输入页将发送键移到输入框右侧，左侧加关闭键取消发送",
                 Settings.inlineSendButton
