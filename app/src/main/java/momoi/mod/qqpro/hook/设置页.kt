@@ -93,6 +93,11 @@ class 设置页 : SettingsActivity() {
                 "输入页将发送键移到输入框右侧，左侧加关闭键取消发送",
                 Settings.inlineSendButton
             )
+            switch(
+                "聊天页直接输入",
+                "在聊天页用输入框替换键盘键，有文字时麦克风键变发送键",
+                Settings.inlineChatInput
+            )
             add<View>()
                 .height(64.dp)
         }
