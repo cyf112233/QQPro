@@ -42,6 +42,7 @@ import momoi.mod.qqpro.hook.forwardText
 import momoi.mod.qqpro.hook.forwardToFriends
 import momoi.mod.qqpro.hook.style.MyImageView
 import momoi.mod.qqpro.hook.view.MyDialogFragment
+import momoi.mod.qqpro.hook.view.smoothScrollToStart
 import momoi.mod.qqpro.lib.FILL
 import momoi.mod.qqpro.lib.background
 import momoi.mod.qqpro.lib.clickable
@@ -233,6 +234,16 @@ class DetailFragment(private val contact: Contact, private val data: ForwardMsgD
     private val mMsgList = mutableListOf<MsgRecord>()
     private lateinit var mRv: RecyclerView
 
+    /** Scroll the history list to the original message the reply points at (by msgSeq). */
+    private fun jumpToReply(seq: Long) {
+        val index = mMsgList.indexOfFirst { it.msgSeq == seq }
+        if (index >= 0) {
+            mRv.smoothScrollToStart(index)
+        } else {
+            Utils.toast(mRv.context, "无法定位消息")
+        }
+    }
+
     @SuppressLint("NotifyDataSetChanged")
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         data.getDetail {
@@ -326,10 +337,11 @@ class DetailFragment(private val contact: Contact, private val data: ForwardMsgD
                                         }
                                     }
                                     msg.elements.forEach { ele ->
-                                        ele.replyElement?.let {
+                                        ele.replyElement?.let { reply ->
                                             group.background(roundCornerDrawable(0xFF_515151.toInt(), Settings.bubbleCornerRadius.value.dpf))
                                             add<ReplyView>()
-                                                .loadData(contact, it)
+                                                .clickable { jumpToReply(reply.replayMsgSeq) }
+                                                .loadData(contact, reply)
                                             return@forEach
                                         }
                                         ele.multiForwardMsgElement?.let {
