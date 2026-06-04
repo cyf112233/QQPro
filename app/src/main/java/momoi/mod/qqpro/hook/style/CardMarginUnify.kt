@@ -7,6 +7,7 @@ import android.view.ViewGroup
 import android.widget.LinearLayout
 import androidx.recyclerview.widget.RecyclerView
 import com.tencent.qqnt.watch.selftab.ui.SelfFragment
+import com.tencent.qqnt.watch.setting.FriendSettingFragment
 import com.tencent.qqnt.watch.troop.ui.member.ui.GroupMemberFragment
 import com.tencent.qqnt.watch.troop.ui.setting.TroopSettingFragment
 import com.tencent.qqnt.watch.selftab.ui.edit.EditAvatarFragment
@@ -190,6 +191,17 @@ class SelectDialogMargins :
         val root = super.onCreateView(inflater, container, savedInstanceState)
         (root as? ViewGroup)?.normalizeListCards()
         Utils.log("CardMarginUnify: select dialog normalized")
+        return root
+    }
+}
+
+/** Friend settings (好友聊天设置: 置顶会话/清空消息/免打扰): switch-option cards. */
+@Mixin
+class FriendSettingMargins : FriendSettingFragment() {
+    override fun Y(p0: LayoutInflater, p1: ViewGroup?, p2: Bundle?): View {
+        val root = super.Y(p0, p1, p2)!!
+        (root as? ViewGroup)?.normalizeListCards()
+        Utils.log("CardMarginUnify: friend settings normalized")
         return root
     }
 }
