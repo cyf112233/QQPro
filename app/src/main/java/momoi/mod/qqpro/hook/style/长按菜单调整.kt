@@ -142,6 +142,8 @@ private fun process(group: ViewGroup, msg: MsgRecord?, dismiss: () -> Unit) {
             .width(FILL)
             .height(0.16f.vh)
     }
+    // Unify the menu item card margins with the rest of the app.
+    linear.normalizeListCards()
 }
 
 @Mixin

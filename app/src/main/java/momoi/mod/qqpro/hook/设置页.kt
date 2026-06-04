@@ -19,6 +19,7 @@ import com.tencent.widget.Switch
 import momoi.anno.mixin.Mixin
 import momoi.mod.qqpro.Pref
 import momoi.mod.qqpro.Settings
+import momoi.mod.qqpro.hook.style.CARD_MARGIN_DP
 import momoi.mod.qqpro.lib.FILL
 import momoi.mod.qqpro.lib.WRAP
 import momoi.mod.qqpro.lib.background
@@ -62,7 +63,7 @@ class 设置页 : SettingsActivity() {
         }
         val root = LinearLayout(this)
             .vertical()
-            .padding(10.dp)
+            .padding(left = (2 * CARD_MARGIN_DP).dp, top = 10.dp, right = (2 * CARD_MARGIN_DP).dp, bottom = 10.dp)
         scroll.addView(root, FILL, WRAP)
         setContentView(scroll)
 
@@ -326,7 +327,7 @@ class 设置页 : SettingsActivity() {
             setColor(0xFF_242424.toInt())
             cornerRadius = 14.dp.toFloat()
         })
-        card.margin(top = 0.dp, bottom = 8.dp)
+        card.margin(top = CARD_MARGIN_DP.dp, bottom = CARD_MARGIN_DP.dp)
         block(card)
     }
 }

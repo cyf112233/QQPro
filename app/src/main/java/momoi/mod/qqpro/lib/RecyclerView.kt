@@ -12,6 +12,24 @@ fun <T : RecyclerView> T.linearLayout() = apply {
     layoutManager = LinearLayoutManager(context)
 }
 
+/**
+ * Run [block] for every child view as it is attached to this RecyclerView.
+ *
+ * The anonymous listener implementation is generated here in the lib package (NOT inline)
+ * so that calling this from a @Mixin method body is safe — an anonymous multi-method
+ * listener created directly inside a @Mixin method crashes with IllegalAccessError
+ * (see qqpro-mixin-anon-class memory).
+ */
+fun RecyclerView.onChildAttached(block: (View) -> Unit) {
+    addOnChildAttachStateChangeListener(object : RecyclerView.OnChildAttachStateChangeListener {
+        override fun onChildViewAttachedToWindow(view: View) {
+            block(view)
+        }
+
+        override fun onChildViewDetachedFromWindow(view: View) {}
+    })
+}
+
 fun <T : RecyclerView, E> T.content(
     data: List<E>,
     factory: Context.() -> View,
