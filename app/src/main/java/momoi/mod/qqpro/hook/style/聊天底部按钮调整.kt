@@ -40,6 +40,7 @@ import momoi.mod.qqpro.lib.hint
 import momoi.mod.qqpro.lib.imageResource
 import momoi.mod.qqpro.lib.margin
 import momoi.mod.qqpro.lib.marginHorizontal
+import momoi.mod.qqpro.lib.onFocusChange
 import momoi.mod.qqpro.lib.padding
 import momoi.mod.qqpro.lib.paddingHorizontal
 import momoi.mod.qqpro.lib.scaleType
@@ -60,18 +61,14 @@ class 聊天底部按钮调整() : `InputBarController$inputContent$2`() {
         val keyboard = getChildAt(2)
         GroupScope(this).apply {
             val roundBg = roundCornerDrawable(0xFF_1B9AF7.toInt(), 9999f)
+            val sideSpaceDp = Settings.screenCornerDiameter.value.toInt()
             add<LinearLayout>().size(FILL, FILL).apply {
                     if (Utils.isRoundScreen) {
                         paddingHorizontal((14.dp / Settings.scale.value).toInt())
                     }
                 }.content {
-                    add<ImageView>().height(FILL).adjustViewBounds()
-                        .scaleType(ImageView.ScaleType.FIT_CENTER).background(roundBg)
-                        .bitmapDecodeAssets("pro/ic_emoji.png").padding(8.dp).clickable {
-                            emoji.callOnClick()
-                        }
                     val voice =
-                        create<ImageView>().height(FILL).adjustViewBounds().background(roundBg)
+                        create<ImageView>().height(FILL).adjustViewBounds()
                             .bitmapDecodeAssets("pro/ic_voice.png").padding(6.dp)
                             .scaleType(ImageView.ScaleType.FIT_CENTER)
                     ThreadManagerV2.getUIHandlerV2().post {
@@ -79,33 +76,51 @@ class 聊天底部按钮调整() : `InputBarController$inputContent$2`() {
                     }
 
                     if (Settings.inlineChatInput.value) {
-                        // Inline EditText replaces the keyboard button. The voice button
-                        // turns into a send button while there is text to send.
-                        val editText = create<EditText>().height(FILL).weight(1f)
-                            .background(roundCornerDrawable(0x22_FFFFFF, 18.dpf))
-                            .padding(12.dp, 4.dp, 12.dp, 4.dp)
-                            .textColor(0xFF_FFFFFF).textSize(14f).gravity(Gravity.CENTER_VERTICAL)
-                            .hint("说点什么...").apply {
-                                setHintTextColor(0x80_FFFFFF.toInt())
-                            }
+                        // One large pill holds the emoji button (left), the EditText
+                        // (middle) and the mic/send button (right). The emoji button
+                        // hides while the keyboard is open; the mic turns into a send
+                        // button whenever there is text to send.
+                        val pill = create<LinearLayout>().height(FILL).weight(1f)
+                            .background(roundCornerDrawable(0x22_FFFFFF, 9999f))
+                            .gravity(Gravity.CENTER_VERTICAL)
                         val send = create<ImageView>().height(FILL).adjustViewBounds()
-                            .background(roundBg).padding(8.dp)
-                            .scaleType(ImageView.ScaleType.FIT_CENTER).apply {
+                            .padding(8.dp).scaleType(ImageView.ScaleType.FIT_CENTER).apply {
                                 setImageDrawable(sendIconDrawable())
                                 visibility = View.GONE
-                            }.clickable {
-                                sendInline(editText)
                             }
+                        lateinit var emojiBtn: ImageView
+                        lateinit var editText: EditText
+                        pill.content {
+                            emojiBtn = add<ImageView>().height(FILL).adjustViewBounds()
+                                .scaleType(ImageView.ScaleType.FIT_CENTER)
+                                .bitmapDecodeAssets("pro/ic_emoji.png").padding(8.dp)
+                                .clickable { emoji.callOnClick() }
+                            editText = add<EditText>().height(FILL).weight(1f)
+                                .background(null)
+                                .paddingHorizontal(4.dp)
+                                .textColor(0xFF_FFFFFF).textSize(14f)
+                                .gravity(Gravity.CENTER_VERTICAL)
+                                .hint("说点什么...").apply {
+                                    setHintTextColor(0x80_FFFFFF.toInt())
+                                }
+                            add(voice.background(null))
+                            add(send)
+                        }
+                        send.clickable { sendInline(editText) }
                         editText.doAfterTextChanged {
                             val hasText = !it.isNullOrBlank()
+                            emojiBtn.visibility = if (hasText) View.GONE else View.VISIBLE
                             voice.visibility = if (hasText) View.GONE else View.VISIBLE
                             send.visibility = if (hasText) View.VISIBLE else View.GONE
                         }
-
-                        add(editText.marginHorizontal(2.dp))
-                        add(voice)
-                        add(send)
+                        add(pill.marginHorizontal(sideSpaceDp.dp))
                     } else {
+                        add<ImageView>().height(FILL).adjustViewBounds()
+                            .scaleType(ImageView.ScaleType.FIT_CENTER).background(roundBg)
+                            .bitmapDecodeAssets("pro/ic_emoji.png").padding(8.dp).clickable {
+                                emoji.callOnClick()
+                            }
+                        voice.background(roundBg)
                         val input = if (Settings.text.isEmpty()) {
                             create<ImageView>().bitmapDecodeAssets("pro/ic_keyboard.png")
                                 .scaleType(ImageView.ScaleType.FIT_CENTER).padding(8.dp)

@@ -20,6 +20,10 @@ object Settings {
     val hideRepeatedSender = BooleanPref("hideRepeatedSender", true)
     val inlineSendButton = BooleanPref("inlineSendButton", true)
     val inlineChatInput = BooleanPref("inlineChatInput", true)
+    // Screen rounded-corner diameter (in dp). Adds left/right margin of this
+    // width to the inline chat EditText so the side buttons aren't clipped by a
+    // round watch screen's corners.
+    val screenCornerDiameter = FloatPref("screenCornerDiameter", 22f)
     val backToFirstPage = BooleanPref("backToFirstPage", true)
 
     // ===== NWear QQ 设置 (by 爅峫) — backed by the base app's "wearqq" prefs =====
