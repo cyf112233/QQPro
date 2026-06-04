@@ -17,7 +17,7 @@ const val VERSION_NAME = "v1.5.1"
 class AboutItemHook(fragment: Fragment) : AboutItem(fragment) {
     override fun onClick(v: View?) {
         val text = buildString {
-            appendLine("QQ Pro")
+            appendLine("QQ Max")
             appendLine(VERSION_NAME)
             appendLine()
             appendLine("NWear QQ · 爅峫")
