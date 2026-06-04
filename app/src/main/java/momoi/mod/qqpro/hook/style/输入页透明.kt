@@ -8,9 +8,11 @@ import android.view.ViewGroup
 import android.widget.EditText
 import android.widget.ImageView
 import android.widget.LinearLayout
+import android.widget.TextView
 import com.tencent.watch.ime.InputMethodFragment
 import momoi.anno.mixin.Mixin
 import momoi.mod.qqpro.Settings
+import momoi.mod.qqpro.hook.action.MessageEdit
 import momoi.mod.qqpro.asGroup
 import momoi.mod.qqpro.drawable.closeIconDrawable
 import momoi.mod.qqpro.drawable.roundCornerDrawable
@@ -37,8 +39,30 @@ class 输入页透明 : InputMethodFragment() {
         editText.background = roundCornerDrawable(0x22_FFFFFF, 18.dpf)
         editText.setPadding(14.dp, 10.dp, 14.dp, 10.dp)
 
+        if (MessageEdit.editingMsgId != 0L) {
+            showEditBanner(root)
+        }
+
         if (Settings.inlineSendButton.value) {
             applyInlineSendButton(root, editText)
+        }
+    }
+
+    // When editing one of our own messages, reuse the native reply banner (input_tip)
+    // to show an "编辑消息" label with a cancel (X) button. Cancelling drops the
+    // edit linkage so the typed text sends as a normal new message instead.
+    private fun showEditBanner(root: ViewGroup) {
+        val res = root.resources
+        val pkg = root.context.packageName
+        val tip = root.findViewById<View>(res.getIdentifier("input_tip", "id", pkg))
+        val label = root.findViewById<TextView>(res.getIdentifier("input_tip_label", "id", pkg))
+        val clear = root.findViewById<View>(res.getIdentifier("clear_extra", "id", pkg))
+        tip?.visibility = View.VISIBLE
+        clear?.visibility = View.VISIBLE
+        label?.text = "编辑消息"
+        clear?.setOnClickListener {
+            MessageEdit.consume()
+            tip?.visibility = View.GONE
         }
     }
 
