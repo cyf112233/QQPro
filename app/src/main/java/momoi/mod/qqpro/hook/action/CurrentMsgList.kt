@@ -13,6 +13,7 @@ import com.tencent.watch.aio_impl.coreImpl.vb.WatchAIOListVB
 import com.tencent.watch.aio_impl.data.WatchAIOMsgItem
 import momoi.anno.mixin.Mixin
 import momoi.mod.qqpro.lib.Observable
+import momoi.mod.qqpro.util.ThreadManager
 import momoi.mod.qqpro.util.Utils
 import java.util.LinkedList
 
@@ -60,16 +61,38 @@ object CurrentMsgList {
         repeatCount: Int = 1000
     ) {
         val msg = msgList.value.find { it.d.msgSeq == seq }
-        if (msg == null) {
-            if (repeatCount > 0) {
-                msgList.observeOnce {
-                    findMsg(seq, result, repeatCount - 1)
-                }
-                loadMoreMsg()
-            } else result(null)
-        } else {
+        if (msg != null) {
             result(msg)
+            return
         }
+        if (repeatCount <= 0) {
+            Utils.log("findMsg: give up (repeat exhausted) seq=$seq")
+            result(null)
+            return
+        }
+        // Load older messages and retry. Two ways to stop instead of hanging forever:
+        // 1) the list stopped growing after a load -> we reached the top of history;
+        // 2) no update arrived within the timeout -> load is stuck / nothing to load.
+        val sizeBefore = msgList.value.size
+        var settled = false
+        msgList.observeOnce {
+            if (settled) return@observeOnce
+            settled = true
+            if (msgList.value.size <= sizeBefore) {
+                // Reached the top of history without finding the target.
+                Utils.log("findMsg: reached top of history, seq=$seq not found")
+                result(null)
+            } else {
+                findMsg(seq, result, repeatCount - 1)
+            }
+        }
+        ThreadManager.runOnUiThread({
+            if (settled) return@runOnUiThread
+            settled = true
+            Utils.log("findMsg: timed out waiting for more msgs, seq=$seq")
+            result(null)
+        }, 3000L)
+        loadMoreMsg()
     }
 
     @Mixin
