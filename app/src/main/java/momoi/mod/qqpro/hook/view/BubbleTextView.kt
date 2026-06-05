@@ -92,15 +92,29 @@ class BubbleTextView(context: Context) : TextView(context) {
 
     private fun onBubbleClick(v: View?) {
         val anchor = returnAnchor
-        if (anchor != null) {
+        // Honour the anchor only if we're still ABOVE it (haven't scrolled down to/past it yet).
+        // If the user already scrolled back down past the anchor, jumping up to it would be wrong —
+        // treat it like a normal go-to-bottom instead.
+        if (anchor != null && anchorStillBelowViewport(anchor)) {
             // First tap of a programmatic jump-up: go back to where we started.
             returnAnchor = null
             scrollBackToAnchor(anchor)
         } else {
-            // No pending anchor: the real go-to-bottom (native behaviour).
+            // No pending anchor (or already scrolled past it): the real go-to-bottom (native behaviour).
+            returnAnchor = null
             forceShow = false
             delegateClick?.onClick(v)
         }
+    }
+
+    // True when the anchor message is still below the bottom of the current viewport, i.e. the user
+    // is reading above it and a return-to-anchor would scroll downward toward it.
+    private fun anchorStillBelowViewport(anchor: WatchAIOMsgItem): Boolean {
+        val rv = runCatching { CurrentMsgList.vb.H }.getOrNull() ?: return false
+        val lm = rv.layoutManager as? AIOLayoutManager ?: return false
+        val idx = CurrentMsgList.getMsgIndex(anchor)
+        if (idx < 0) return false
+        return lm.findLastVisibleItemPosition() < idx
     }
 
     private fun scrollBackToAnchor(anchor: WatchAIOMsgItem) {
