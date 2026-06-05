@@ -172,24 +172,39 @@ object AIOCell {
                     }
                 }
             }
-            hooks.forEach {
-                if (item.d.msgType == it.type) {
-                    val view = it.getOrCreate(widget)
-                    it.bind(widget, view, item.d as MsgRecordEx)
-                    (item as? WatchToQQViewMsgItem)?.o = ""
-                } else {
-                    it.recover(widget)
-                }
+            // Resolve the single matching hook first, then recover every other
+            // hook BEFORE binding the match. recover() re-shows contentWidget when
+            // that hook previously owned a view for this (recycled) widget; running
+            // it after bind() would re-reveal the orange "view on phone" text on top
+            // of e.g. the ark card. Binding last guarantees contentWidget ends hidden.
+            val matched = hooks.firstOrNull { item.d.msgType == it.type }
+            hooks.forEach { if (it !== matched) it.recover(widget) }
+            matched?.let {
+                val view = it.getOrCreate(widget)
+                it.bind(widget, view, item.d as MsgRecordEx)
+                (item as? WatchToQQViewMsgItem)?.o = ""
             }
-            (widget.contentWidget as? TextView)?.let {
-                it.linkify()
-                it.layoutParams?.let {
-                    it.width = ViewGroup.LayoutParams.WRAP_CONTENT
-                    it.height = ViewGroup.LayoutParams.WRAP_CONTENT
+            // Only linkify the native text bubble. Special messages (file/struct/
+            // ark/forward) hide contentWidget and render their own view, so running
+            // linkify on it would e.g. match a file extension in the hidden text.
+            // Append-mode hooks (reply) keep contentWidget, so still linkify those.
+            if (matched == null || matched.appendMode) {
+                (widget.contentWidget as? TextView)?.let {
+                    it.linkify()
+                    it.layoutParams?.let {
+                        it.width = ViewGroup.LayoutParams.WRAP_CONTENT
+                        it.height = ViewGroup.LayoutParams.WRAP_CONTENT
+                    }
                 }
             }
             BubbleCorner.apply(widget)
-            LinkPreview.bind(widget)
+            // Same guard as linkify: don't run link preview off a special message's
+            // hidden contentWidget text (e.g. a file extension matched as a URL).
+            if (matched == null || matched.appendMode) {
+                LinkPreview.bind(widget)
+            } else {
+                LinkPreview.hide(widget)
+            }
         }
     }
 

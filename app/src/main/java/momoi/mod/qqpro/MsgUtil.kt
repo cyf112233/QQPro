@@ -8,6 +8,7 @@ import com.tencent.qqnt.msg.api.impl.MsgServiceImpl
 import com.tencent.qqnt.msg.api.impl.MsgUtilApiImpl
 import com.tencent.watch.aio_impl.ext.MsgListUtilKt
 import momoi.mod.qqpro.enums.ElementType
+import momoi.mod.qqpro.hook.openAddSearch
 import momoi.mod.qqpro.hook.view.MyDialogFragment
 import momoi.mod.qqpro.util.Json
 import kotlin.random.Random
@@ -117,5 +118,18 @@ fun View.confirmOpenUrl(url: String) {
     }.onFailure {
         // No host fragment to attach to — open directly rather than swallow the tap.
         momoi.mod.qqpro.util.Utils.openUrl(url)
+    }
+}
+
+/**
+ * Confirm before searching a tapped number (6–15 digits). On confirm, opens the
+ * add-friend/group search pad prefilled with [number] (search returns both).
+ */
+fun View.confirmSearchNumber(number: String) {
+    val v = this
+    runCatching {
+        showDialog(momoi.mod.qqpro.hook.view.SearchNumberFragment(number) {
+            v.openAddSearch(number)
+        })
     }
 }

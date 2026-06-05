@@ -41,6 +41,11 @@ object LinkPreview {
     private val cache = HashMap<String, Og?>()
     private const val RESOLVING = "解析中…"
 
+    /** Hide any preview card on this cell (used when a special-message hook owns it). */
+    fun hide(widget: AIOCellGroupWidget) {
+        cards[widget]?.root?.visibility = View.GONE
+    }
+
     fun bind(widget: AIOCellGroupWidget) {
         val content = widget.getContentWidget<View>() as? TextView
         val url = if (Settings.enableLinkPreview.value && content != null) {
@@ -166,6 +171,13 @@ object LinkPreview {
         }
 
         fun show(url: String) {
+            // Known-unresolvable (cached null): keep the card hidden even though the
+            // caller just set it VISIBLE on rebind.
+            if (cache.containsKey(url) && cache[url] == null) {
+                boundUrl = url
+                render(url, null)
+                return
+            }
             if (boundUrl == url) return // already rendered for this url; avoid flicker
             boundUrl = url
 
@@ -189,10 +201,9 @@ object LinkPreview {
 
         private fun render(url: String, og: Og?) {
             if (og == null) {
-                // Nothing resolved: keep just the host header, drop the spinner text.
-                title.visibility = View.GONE
-                desc.visibility = View.GONE
-                image.visibility = View.GONE
+                // Nothing resolved: hide the whole card rather than leaving a bare
+                // host header / spinner behind.
+                root.visibility = View.GONE
                 return
             }
             site.text = og.siteName
