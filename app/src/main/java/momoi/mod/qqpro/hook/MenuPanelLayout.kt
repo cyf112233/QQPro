@@ -138,6 +138,11 @@ class MenuPanelLayout(p0: (Int) -> Unit, p1: Boolean) : MenuFrame(p0, p1) {
                 icon.isClickable = false
                 ll.clickable { launchSystemPhoto(this) }
             }
+            // 相册 with system picker on → launch the system photo/SAF picker instead of QQ's gallery.
+            label0.contains("相册") && Settings.useSystemImagePicker.value -> {
+                icon.isClickable = false
+                ll.clickable { launchSystemImagePicker(this) }
+            }
             else -> ll.clickable { icon.performClick() }
         }
     }

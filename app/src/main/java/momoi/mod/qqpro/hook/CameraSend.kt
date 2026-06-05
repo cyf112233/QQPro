@@ -35,6 +35,7 @@ import java.io.FileOutputStream
 const val REQ_SYS_PHOTO = 0x7301
 const val REQ_SYS_VIDEO = 0x7302
 const val REQ_PICK_AUDIO = 0x7303
+const val REQ_PICK_IMAGES = 0x7304
 
 object CameraCapture {
     var pendingPhotoPath: String? = null
@@ -96,6 +97,48 @@ fun launchPickAudio(fragment: Fragment) {
     }
 }
 
+/**
+ * Open the system image picker to choose one or more images to send. Prefers the Android photo
+ * picker (ACTION_PICK_IMAGES, no permission needed) when the device provides it, and falls back
+ * to the SAF document picker (ACTION_GET_CONTENT) otherwise. Both are configured for multi-select.
+ */
+fun launchSystemImagePicker(fragment: Fragment) {
+    runCatching {
+        val pm = fragment.requireContext().packageManager
+        // Photo picker (API 33+, or backported on some devices). Prefer it when resolvable.
+        val photoPicker = Intent(MediaStore.ACTION_PICK_IMAGES).apply {
+            type = "image/*"
+            putExtra(MediaStore.EXTRA_PICK_IMAGES_MAX, 9)
+        }
+        val intent = if (photoPicker.resolveActivity(pm) != null) {
+            Utils.log("imagepick: using system photo picker")
+            photoPicker
+        } else {
+            Utils.log("imagepick: photo picker unavailable, using SAF")
+            Intent(Intent.ACTION_GET_CONTENT)
+                .setType("image/*")
+                .addCategory(Intent.CATEGORY_OPENABLE)
+                .putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true)
+        }
+        fragment.startActivityForResult(intent, REQ_PICK_IMAGES)
+    }.onFailure {
+        Utils.log("imagepick: launch failed: $it")
+        runCatching { Utils.toast(fragment.requireContext(), "未找到可选择图片的应用") }
+    }
+}
+
+/** Collect all picked URIs from a picker result (handles both single and multi-select). */
+private fun pickedUris(data: Intent?): List<Uri> {
+    val out = ArrayList<Uri>()
+    val clip = data?.clipData
+    if (clip != null) {
+        for (i in 0 until clip.itemCount) clip.getItemAt(i)?.uri?.let { out.add(it) }
+    } else {
+        data?.data?.let { out.add(it) }
+    }
+    return out
+}
+
 /** Handle a system capture result. Returns true if [requestCode] was one of ours. */
 fun handleCaptureResult(requestCode: Int, resultCode: Int, data: Intent?): Boolean {
     val fallback = data?.data
@@ -105,6 +148,14 @@ fun handleCaptureResult(requestCode: Int, resultCode: Int, data: Intent?): Boole
             if (resultCode == -1 && uri != null) {
                 GalleryMultiSelectState.goToChatOnResume = true
                 Thread { sendAudio(uri) }.start()
+            }
+            return true
+        }
+        REQ_PICK_IMAGES -> {
+            val uris = pickedUris(data)
+            if (resultCode == -1 && uris.isNotEmpty()) {
+                GalleryMultiSelectState.goToChatOnResume = true
+                Thread { sendPickedImages(uris) }.start()
             }
             return true
         }
@@ -166,6 +217,44 @@ private fun sendPhoto(path: String, fallback: Uri?) {
         if (!ensureFile(path, fallback)) { Utils.log("camera: photo empty $path"); return }
         send(com.tencent.watch.aio_impl.ext.MsgUtil().a(path, 0))
     }.onFailure { Utils.log("camera: sendPhoto failed: $it") }
+}
+
+/**
+ * Copy each picked image [uris] into our files dir and send them to the current chat as a single
+ * message (multiple image elements), mirroring QQ's own multi-image send. Runs on a background
+ * thread; the copy must finish before the send, so it is done here rather than via the IME preview.
+ */
+private fun sendPickedImages(uris: List<Uri>) {
+    runCatching {
+        val ctx = Utils.application
+        val dir = ctx.getExternalFilesDir("photos") ?: ctx.filesDir
+        if (!dir.exists()) dir.mkdirs()
+        val elements = ArrayList<MsgElement>()
+        for ((idx, uri) in uris.withIndex()) {
+            runCatching {
+                val ext = when (ctx.contentResolver.getType(uri)) {
+                    "image/png" -> "png"
+                    "image/gif" -> "gif"
+                    "image/webp" -> "webp"
+                    else -> "jpg"
+                }
+                val file = File(dir, "qqpro_${System.currentTimeMillis()}_$idx.$ext")
+                ctx.contentResolver.openInputStream(uri)?.use { input ->
+                    FileOutputStream(file).use { input.copyTo(it) }
+                }
+                if (file.exists() && file.length() > 0L) {
+                    elements.add(com.tencent.watch.aio_impl.ext.MsgUtil().a(file.path, 0))
+                } else {
+                    Utils.log("imagepick: empty $uri")
+                }
+            }.onFailure { Utils.log("imagepick: copy/build failed for $uri: $it") }
+        }
+        if (elements.isEmpty()) { Utils.log("imagepick: nothing to send"); return }
+        MsgUtil.msgService.sendMsg(
+            CurrentContact, 0L, ArrayList(elements),
+            IOperateCallback { code, msg -> Utils.log("imagepick send result=$code msg=$msg count=${elements.size}") }
+        )
+    }.onFailure { Utils.log("imagepick: sendPickedImages failed: $it") }
 }
 
 private fun sendVideo(origPath: String, fallback: Uri?) {

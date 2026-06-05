@@ -29,6 +29,15 @@ object Settings {
     // via an intent for photos. Video recording always uses the system app (the in-app
     // camera can't record video).
     val useInAppCamera = BooleanPref("useInAppCamera", true)
+    // Sort the image/gallery picker by date taken (EXIF capture time) instead of
+    // the default date_modified. Falls back to date_modified when a file has no
+    // capture time recorded.
+    val gallerySortByDateTaken = BooleanPref("gallerySortByDateTaken", false)
+    // Use the system image picker (Android photo picker if available, otherwise the
+    // SAF document picker) for 相册 instead of QQ's in-app gallery. Avoids needing
+    // storage permission and works around in-app picker problems on some devices.
+    // Supports selecting multiple images at once.
+    val useSystemImagePicker = BooleanPref("useSystemImagePicker", false)
     // Ask before opening a tapped link in the browser.
     val confirmOpenLink = BooleanPref("confirmOpenLink", true)
     // Also detect links without an http(s):// prefix (e.g. "example.com/x").

@@ -94,6 +94,8 @@ class 设置页 : SettingsActivity() {
             slider("屏幕圆角直径", "在输入框左右各留出此宽度的空白，避免圆屏圆角裁切两侧按钮", Settings.screenCornerDiameter, min = 0f, max = 48f)
             switch("返回先回首页", "不在首页时按返回先滑回第一页，已在首页才退出", Settings.backToFirstPage)
             switch("使用应用内相机", "开启后拍照/录像都用应用内相机，关闭后改用系统/第三方相机", Settings.useInAppCamera)
+            switch("相册按拍摄时间排序", "图片选择器按拍摄时间排序，关闭则按文件修改时间(默认)", Settings.gallerySortByDateTaken)
+            switch("使用系统图片选择器", "相册改用系统图片选择器/文件选择器，无需相册权限，可多选，修复部分设备问题", Settings.useSystemImagePicker)
             switch("点击链接确认", "点击消息中的链接时，弹窗询问是否用浏览器打开", Settings.confirmOpenLink)
             switch("识别无前缀链接", "同时识别不带 http(s):// 的网址，如 example.com/x", Settings.wideUrlMatch)
             switch("链接预览", "消息含链接时尝试解析网站图标、标题与简介，显示在消息下方", Settings.enableLinkPreview)
