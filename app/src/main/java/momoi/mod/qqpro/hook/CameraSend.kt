@@ -10,6 +10,7 @@ import androidx.core.content.FileProvider
 import androidx.fragment.app.Fragment
 import com.tencent.qqnt.kernel.nativeinterface.IOperateCallback
 import com.tencent.qqnt.kernel.nativeinterface.MsgElement
+import com.tencent.qqnt.kernel.nativeinterface.PttElement
 import com.tencent.qqnt.kernel.nativeinterface.QQNTWrapperUtil
 import com.tencent.qqnt.kernel.nativeinterface.RichMediaFilePathInfo
 import com.tencent.qqnt.kernel.nativeinterface.VideoElement
@@ -33,6 +34,7 @@ import java.io.FileOutputStream
 
 const val REQ_SYS_PHOTO = 0x7301
 const val REQ_SYS_VIDEO = 0x7302
+const val REQ_PICK_AUDIO = 0x7303
 
 object CameraCapture {
     var pendingPhotoPath: String? = null
@@ -80,10 +82,32 @@ fun launchSystemVideo(fragment: Fragment) {
     }
 }
 
+/** Open the system file picker to choose an audio file to send as a voice message. */
+fun launchPickAudio(fragment: Fragment) {
+    runCatching {
+        val intent = Intent(Intent.ACTION_GET_CONTENT)
+            .setType("audio/*")
+            .addCategory(Intent.CATEGORY_OPENABLE)
+        fragment.startActivityForResult(intent, REQ_PICK_AUDIO)
+        Utils.log("audio: launch picker")
+    }.onFailure {
+        Utils.log("audio: launch picker failed: $it")
+        runCatching { Utils.toast(fragment.requireContext(), "未找到可选择音频的应用") }
+    }
+}
+
 /** Handle a system capture result. Returns true if [requestCode] was one of ours. */
 fun handleCaptureResult(requestCode: Int, resultCode: Int, data: Intent?): Boolean {
     val fallback = data?.data
     when (requestCode) {
+        REQ_PICK_AUDIO -> {
+            val uri = data?.data
+            if (resultCode == -1 && uri != null) {
+                GalleryMultiSelectState.goToChatOnResume = true
+                Thread { sendAudio(uri) }.start()
+            }
+            return true
+        }
         REQ_SYS_PHOTO -> {
             val path = CameraCapture.pendingPhotoPath
             CameraCapture.pendingPhotoPath = null
@@ -149,6 +173,65 @@ private fun sendVideo(origPath: String, fallback: Uri?) {
         if (!ensureFile(origPath, fallback)) { Utils.log("camera: video empty $origPath"); return }
         send(buildVideoElement(origPath))
     }.onFailure { Utils.log("camera: sendVideo failed: $it") }
+}
+
+/** Copy a picked audio [uri] into our files dir and send it to the current chat as a voice (PTT). */
+private fun sendAudio(uri: Uri) {
+    runCatching {
+        val ctx = Utils.application
+        val ext = when {
+            uri.toString().endsWith(".amr", true) -> "amr"
+            uri.toString().endsWith(".silk", true) || uri.toString().endsWith(".slk", true) -> "silk"
+            uri.toString().endsWith(".m4a", true) -> "m4a"
+            else -> "mp3"
+        }
+        val dir = ctx.getExternalFilesDir("audios") ?: ctx.filesDir
+        if (!dir.exists()) dir.mkdirs()
+        val src = File(dir, "qqpro_${System.currentTimeMillis()}.$ext")
+        ctx.contentResolver.openInputStream(uri)?.use { input ->
+            FileOutputStream(src).use { input.copyTo(it) }
+        }
+        if (!src.exists() || src.length() == 0L) { Utils.log("audio: empty $uri"); return }
+        send(buildPttElement(src.path))
+    }.onFailure { Utils.log("audio: sendAudio failed: $it") }
+}
+
+/** Replicates AudioTouchViewNTProcessor's PTT-element build sequence for a local audio file. */
+private fun buildPttElement(origPath: String): MsgElement {
+    val md5 = QQNTWrapperUtil.CppProxy.genFileMd5Hex(origPath)
+    val svc = KernelServiceUtil.c()
+    val sendPath = svc?.getRichMediaFilePathForMobileQQSend(
+        RichMediaFilePathInfo(4, 3, md5, FileUtils().a(origPath), 1, 0, null, "", true)
+    ) ?: ""
+    if (!QQNTWrapperUtil.CppProxy.fileIsExist(sendPath)) {
+        com.tencent.qqnt.util.file.FileUtils.b(origPath, sendPath)
+    }
+
+    val durationMs = runCatching {
+        val r = MediaMetadataRetriever()
+        r.setDataSource(origPath)
+        r.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)?.toLong() ?: 0L
+    }.getOrDefault(0L)
+
+    val ptt = PttElement()
+    ptt.fileName = FileUtils().a(sendPath)
+    ptt.filePath = sendPath
+    ptt.md5HexStr = QQNTWrapperUtil.CppProxy.genFileMd5Hex(sendPath)
+    ptt.fileSize = QQNTWrapperUtil.CppProxy.getFileSize(sendPath)
+    ptt.duration = Math.max(1, Math.round(durationMs / 1000.0).toInt())
+    ptt.formatType = if (origPath.endsWith(".amr", true)) 0 else 1
+    ptt.voiceType = 2
+    ptt.voiceChangeType = 0
+    ptt.canConvert2Text = false
+    ptt.fileId = 0
+    ptt.fileUuid = ""
+    ptt.text = ""
+    ptt.waveAmplitudes = ArrayList()
+
+    val element = MsgElement()
+    element.elementType = 4
+    element.pttElement = ptt
+    return element
 }
 
 /** Replicates MenuFrame's gallery video-element build sequence. */

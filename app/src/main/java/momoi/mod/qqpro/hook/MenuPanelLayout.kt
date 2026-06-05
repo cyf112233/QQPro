@@ -14,6 +14,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.tencent.watch.aio_impl.ui.frames.MenuFrame
 import momoi.anno.mixin.Mixin
 import momoi.mod.qqpro.Settings
+import momoi.mod.qqpro.drawable.audioFileIconDrawable
 import momoi.mod.qqpro.drawable.cameraIconDrawable
 import momoi.mod.qqpro.drawable.galleryIconDrawable
 import momoi.mod.qqpro.drawable.phoneIconDrawable
@@ -80,8 +81,10 @@ class MenuPanelLayout(p0: (Int) -> Unit, p1: Boolean) : MenuFrame(p0, p1) {
             val camIndex = items.indexOfFirst { it.b().contains("拍") }
             val at = if (camIndex >= 0) camIndex + 1 else items.size
             items.add(at, RecordMenuItem(this))
+            // 音频文件 goes right below 录像.
+            items.add(at + 1, AudioMenuItem(this))
             adapter.notifyDataSetChanged()
-            Utils.log("MenuPanelLayout: injected 录像 at $at")
+            Utils.log("MenuPanelLayout: injected 录像/音频文件 at $at")
         }.onFailure { Utils.log("MenuPanelLayout: inject 录像 failed: $it") }
     }
 
@@ -141,6 +144,7 @@ class MenuPanelLayout(p0: (Int) -> Unit, p1: Boolean) : MenuFrame(p0, p1) {
     }
 
     private fun iconFor(text: String) = when {
+        text.contains("音频") -> audioFileIconDrawable()
         text.contains("录") -> recordIconDrawable()
         text.contains("相册") -> galleryIconDrawable()
         text.contains("拍") -> cameraIconDrawable()
@@ -172,5 +176,21 @@ class RecordMenuItem(
         } else {
             launchSystemVideo(fragment)
         }
+    }
+}
+
+/**
+ * A panel item that picks an audio file from local storage and sends it as a voice (PTT) message.
+ * Inserted right below 录像.
+ */
+class AudioMenuItem(
+    private val fragment: androidx.fragment.app.Fragment
+) : com.tencent.watch.aio_impl.ui.frames.MenuItem() {
+    override fun a() = 0
+    override fun b() = "音频文件"
+    override fun d() = 2
+    override fun e() {
+        runCatching { launchPickAudio(fragment) }
+            .onFailure { Utils.log("audio: launch from menu failed: $it") }
     }
 }
