@@ -19,6 +19,7 @@ import loadPicUrl
 import momoi.mod.qqpro.enums.ElementType
 import momoi.mod.qqpro.msg.getImageUrl
 import momoi.mod.qqpro.hook.action.CurrentMsgList
+import momoi.mod.qqpro.hook.style.cardMargin
 import momoi.mod.qqpro.lib.FILL
 import momoi.mod.qqpro.lib.clickable
 import momoi.mod.qqpro.lib.content
@@ -101,6 +102,10 @@ fun addChatSearchEntry(fragment: SettingFrame) {
         }
         // Header views are avatar(0), nick(1), peerId(2), info(3); insert before the menu items.
         container.addView(row, minOf(4, container.childCount))
+        // normalizeListCards() already ran in SettingFrameMargins.Y (onCreateView), before this
+        // row existed — so apply the unified card margin here too, or it keeps the native
+        // setting_item XML margins and looks slightly off vs the other entries.
+        row.cardMargin()
         Utils.log("ChatSearch: entry added")
     }.onFailure { Utils.log("ChatSearch: addEntry failed: $it") }
 }
