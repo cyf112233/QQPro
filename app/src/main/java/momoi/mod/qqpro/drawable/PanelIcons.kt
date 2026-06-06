@@ -200,6 +200,32 @@ fun atIconDrawable(): Drawable = object : Drawable() {
     override fun getOpacity() = PixelFormat.TRANSLUCENT
 }
 
+/** A simple "+" — the attachment / open-panel icon used on the input bar. */
+fun plusIconDrawable(): Drawable = iconDrawable { c, box, stroke, _ ->
+    val w = box.width()
+    val len = w * 0.62f
+    stroke.strokeWidth = w * 0.11f
+    c.drawLine(box.centerX() - len / 2f, box.centerY(), box.centerX() + len / 2f, box.centerY(), stroke)
+    c.drawLine(box.centerX(), box.centerY() - len / 2f, box.centerX(), box.centerY() + len / 2f, stroke)
+}
+
+/** A round smiley face — the emoji-panel icon (used as a list item in the attachment overlay). */
+fun emojiIconDrawable(): Drawable = iconDrawable { c, box, stroke, fill ->
+    val w = box.width()
+    val r = w * 0.42f
+    c.drawCircle(box.centerX(), box.centerY(), r, stroke)
+    // eyes
+    val eyeY = box.centerY() - w * 0.10f
+    c.drawCircle(box.centerX() - w * 0.16f, eyeY, w * 0.055f, fill)
+    c.drawCircle(box.centerX() + w * 0.16f, eyeY, w * 0.055f, fill)
+    // smile (stroked arc)
+    val mouth = RectF(
+        box.centerX() - w * 0.22f, box.centerY() - w * 0.02f,
+        box.centerX() + w * 0.22f, box.centerY() + w * 0.26f
+    )
+    c.drawArc(mouth, 20f, 140f, false, stroke)
+}
+
 /** A video camera (rounded body + lens) — the video-call icon (from the supplied SVG, filled). */
 fun videoIconDrawable(): Drawable = svgPathIcon(
     "M16 8C16 6.34315 14.6569 5 13 5H4C2.34315 5 1 6.34315 1 8V16C1 17.6569 2.34315 19 4 19H13C14.6569 19 16 17.6569 16 16V13.9432L21.4188 17.8137C21.7236 18.0315 22.1245 18.0606 22.4576 17.8892C22.7907 17.7178 23 17.3746 23 17V7C23 6.62541 22.7907 6.28224 22.4576 6.11083C22.1245 5.93943 21.7236 5.96854 21.4188 6.18627L16 10.0568V8ZM16.7205 12L21 8.94319V15.0568L16.7205 12ZM13 7C13.5523 7 14 7.44772 14 8V12V16C14 16.5523 13.5523 17 13 17H4C3.44772 17 3 16.5523 3 16V8C3 7.44772 3.44772 7 4 7H13Z",

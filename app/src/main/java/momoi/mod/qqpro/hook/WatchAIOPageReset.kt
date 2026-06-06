@@ -2,9 +2,13 @@ package momoi.mod.qqpro.hook
 
 import android.os.Bundle
 import android.view.View
+import android.view.ViewGroup
+import com.tencent.qqnt.watch.ui.componet.tablayout.CircleIndicator
 import com.tencent.watch.aio_impl.ui.WatchAIOFragment
 import moye.wearqq.IMEOperation
 import momoi.anno.mixin.Mixin
+import momoi.mod.qqpro.Settings
+import momoi.mod.qqpro.findAll
 import momoi.mod.qqpro.hook.action.GalleryMultiSelectState
 import momoi.mod.qqpro.util.ChatBackground
 import momoi.mod.qqpro.util.Utils
@@ -24,6 +28,45 @@ class WatchAIOPageReset : WatchAIOFragment() {
         if (ChatBackground.isSet()) {
             Utils.log("WatchAIOFragment.onViewCreated applying custom chat background, bgView=${this.d}")
             ChatBackground.applyTo(this.d)
+        }
+        if (Settings.attachmentOverlay.value) fixIndicatorIcons(view)
+    }
+
+    /**
+     * With the attachment page removed, the page indicator still maps position 1 to the
+     * 附件 (service) icon, but position 1 is now the settings page. Rewrite the indicator's
+     * icon map so position 1 reuses the existing setting icon (key 2). Best-effort, cosmetic.
+     */
+    private fun fixIndicatorIcons(view: View) {
+        runCatching {
+            val indicator = (view as? ViewGroup)?.findAll { it is CircleIndicator } as? CircleIndicator
+                ?: run { Utils.log("fixIndicatorIcons: indicator not found"); return }
+            // Find the Config object held by the indicator, then its icon HashMap.
+            val cfg = indicator.javaClass.declaredFields.firstOrNull {
+                it.type.simpleName == "Config"
+            }?.apply { isAccessible = true }?.get(indicator)
+                ?: run { Utils.log("fixIndicatorIcons: config not found"); return }
+            val mapField = cfg.javaClass.declaredFields.firstOrNull {
+                java.util.Map::class.java.isAssignableFrom(it.type)
+            }?.apply { isAccessible = true } ?: run { Utils.log("fixIndicatorIcons: map not found"); return }
+            @Suppress("UNCHECKED_CAST")
+            val map = mapField.get(cfg) as? MutableMap<Int, Any> ?: return
+            if (map.containsKey(1) && map.containsKey(2)) {
+                map[1] = map[2]!!
+                runCatching { f?.let { indicator.setViewPager(it) } }
+                Utils.log("fixIndicatorIcons: remapped position 1 -> setting icon")
+            }
+        }.onFailure { Utils.log("fixIndicatorIcons failed: $it") }
+    }
+
+    override fun onPause() {
+        super.onPause()
+        // Any attachment action that leaves the chat (gallery / camera / system picker / IME
+        // preview) navigates away instead of calling the overlay's selector. Closing the overlay
+        // here covers all those paths; direct in-place sends are handled by selector -> dismiss().
+        if (AttachmentOverlay.active) {
+            Utils.log("WatchAIOFragment.onPause dismissing attachment overlay")
+            AttachmentOverlay.dismiss()
         }
     }
 

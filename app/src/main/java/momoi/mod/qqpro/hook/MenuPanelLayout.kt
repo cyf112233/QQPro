@@ -17,6 +17,7 @@ import momoi.mod.qqpro.Settings
 import momoi.mod.qqpro.drawable.atIconDrawable
 import momoi.mod.qqpro.drawable.audioFileIconDrawable
 import momoi.mod.qqpro.drawable.cameraIconDrawable
+import momoi.mod.qqpro.drawable.emojiIconDrawable
 import momoi.mod.qqpro.drawable.galleryIconDrawable
 import momoi.mod.qqpro.drawable.phoneIconDrawable
 import momoi.mod.qqpro.drawable.recordIconDrawable
@@ -89,6 +90,11 @@ class MenuPanelLayout(p0: (Int) -> Unit, p1: Boolean) : MenuFrame(p0, p1) {
             items.add(at + 1, AudioMenuItem(this))
             // @成员 only in group chats; placed at the top of the panel.
             if (CurrentContact.isGroup) items.add(0, MentionMenuItem(this))
+            // 表情 — only when shown as the input bar "+" overlay (the native emoji button is
+            // replaced by "+", so emoji moves into this list). Placed at the very top.
+            if (Settings.attachmentOverlay.value && items.none { it is EmojiMenuItem }) {
+                items.add(0, EmojiMenuItem())
+            }
             adapter.notifyDataSetChanged()
             Utils.log("MenuPanelLayout: injected 录像/音频文件 at $at")
         }.onFailure { Utils.log("MenuPanelLayout: inject 录像 failed: $it") }
@@ -155,6 +161,7 @@ class MenuPanelLayout(p0: (Int) -> Unit, p1: Boolean) : MenuFrame(p0, p1) {
     }
 
     private fun iconFor(text: String) = when {
+        text.contains("表情") -> emojiIconDrawable()
         text.contains("艾特") -> atIconDrawable()
         text.contains("音频") -> audioFileIconDrawable()
         text.contains("录") -> recordIconDrawable()
@@ -188,6 +195,11 @@ class RecordMenuItem(
         } else {
             launchSystemVideo(fragment)
         }
+        // The in-app recorder is a dialog over the chat — it doesn't pause the AIO fragment, so
+        // the overlay's onPause auto-close never fires. Close the overlay now (the recorder dialog
+        // is already shown and independent; it doesn't use the MenuFrame host except for a page-0
+        // switch that the overlay feature doesn't need).
+        AttachmentOverlay.dismiss()
     }
 }
 
@@ -222,5 +234,20 @@ class MentionMenuItem(
         runCatching {
             MemberPickerFragment().show(fragment.parentFragmentManager, "qqpro_member_picker")
         }.onFailure { Utils.log("mention: show member picker failed: $it") }
+    }
+}
+
+/**
+ * A panel item (overlay mode only) that opens the native emoji/sticker panel. Replaces the
+ * input bar's old emoji button, which is now the "+" that opens this overlay. Tapping it
+ * dismisses the overlay and fires the native emoji button's click via [AttachmentOverlay.emojiAction].
+ */
+class EmojiMenuItem : com.tencent.watch.aio_impl.ui.frames.MenuItem() {
+    override fun a() = 0
+    override fun b() = "表情"
+    override fun d() = 2
+    override fun e() {
+        runCatching { AttachmentOverlay.emojiAction?.invoke() }
+            .onFailure { Utils.log("emoji menu item failed: $it") }
     }
 }

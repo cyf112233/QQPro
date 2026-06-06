@@ -25,6 +25,10 @@ object Settings {
     // round watch screen's corners.
     val screenCornerDiameter = FloatPref("screenCornerDiameter", 22f)
     val backToFirstPage = BooleanPref("backToFirstPage", true)
+    // Replace the input bar's emoji button with a "+" button that opens the attachment
+    // list as an overlay over the chat (like the long-press menu). Removes the attachment
+    // ViewPager page (友: 聊天+设置 两页; 非好友: 仅聊天), and moves 表情 into the overlay list.
+    val attachmentOverlay = BooleanPref("attachmentOverlay", false)
     // Use the in-app camera for 拍照. When off, launch the system camera app (third-party)
     // via an intent for photos. Video recording always uses the system app (the in-app
     // camera can't record video).

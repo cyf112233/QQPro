@@ -21,8 +21,10 @@ import momoi.anno.mixin.Mixin
 import momoi.mod.qqpro.MsgUtil
 import momoi.mod.qqpro.Settings
 import momoi.mod.qqpro.asGroup
+import momoi.mod.qqpro.drawable.plusIconDrawable
 import momoi.mod.qqpro.drawable.roundCornerDrawable
 import momoi.mod.qqpro.drawable.sendIconDrawable
+import momoi.mod.qqpro.hook.AttachmentOverlay
 import momoi.mod.qqpro.hook.action.CurrentContact
 import momoi.mod.qqpro.lib.FILL
 import momoi.mod.qqpro.lib.GroupScope
@@ -92,9 +94,15 @@ class 聊天底部按钮调整() : `InputBarController$inputContent$2`() {
                         lateinit var editText: EditText
                         pill.content {
                             emojiBtn = add<ImageView>().height(FILL).adjustViewBounds()
-                                .scaleType(ImageView.ScaleType.FIT_CENTER)
-                                .bitmapDecodeAssets("pro/ic_emoji.png").padding(8.dp)
-                                .clickable { emoji.callOnClick() }
+                                .scaleType(ImageView.ScaleType.FIT_CENTER).padding(8.dp)
+                            if (Settings.attachmentOverlay.value) {
+                                // Emoji button becomes a "+" that opens the attachment overlay.
+                                emojiBtn.setImageDrawable(plusIconDrawable())
+                                emojiBtn.clickable { AttachmentOverlay.show(emojiBtn, emoji) }
+                            } else {
+                                emojiBtn.bitmapDecodeAssets("pro/ic_emoji.png")
+                                emojiBtn.clickable { emoji.callOnClick() }
+                            }
                             editText = add<EditText>().height(FILL).weight(1f)
                                 .background(null)
                                 .paddingHorizontal(4.dp)
@@ -109,17 +117,23 @@ class 聊天底部按钮调整() : `InputBarController$inputContent$2`() {
                         send.clickable { sendInline(editText) }
                         editText.doAfterTextChanged {
                             val hasText = !it.isNullOrBlank()
+                            // Hide the emoji / "+" button when there is text, to make room for
+                            // the send button.
                             emojiBtn.visibility = if (hasText) View.GONE else View.VISIBLE
                             voice.visibility = if (hasText) View.GONE else View.VISIBLE
                             send.visibility = if (hasText) View.VISIBLE else View.GONE
                         }
                         add(pill.marginHorizontal(sideSpaceDp.dp))
                     } else {
-                        add<ImageView>().height(FILL).adjustViewBounds()
-                            .scaleType(ImageView.ScaleType.FIT_CENTER).background(roundBg)
-                            .bitmapDecodeAssets("pro/ic_emoji.png").padding(8.dp).clickable {
-                                emoji.callOnClick()
-                            }
+                        val left = add<ImageView>().height(FILL).adjustViewBounds()
+                            .scaleType(ImageView.ScaleType.FIT_CENTER).background(roundBg).padding(8.dp)
+                        if (Settings.attachmentOverlay.value) {
+                            left.setImageDrawable(plusIconDrawable())
+                            left.clickable { AttachmentOverlay.show(left, emoji) }
+                        } else {
+                            left.bitmapDecodeAssets("pro/ic_emoji.png")
+                            left.clickable { emoji.callOnClick() }
+                        }
                         voice.background(roundBg)
                         val input = if (Settings.text.isEmpty()) {
                             create<ImageView>().bitmapDecodeAssets("pro/ic_keyboard.png")
