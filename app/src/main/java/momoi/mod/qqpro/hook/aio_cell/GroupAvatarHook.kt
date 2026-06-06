@@ -21,7 +21,6 @@ import download
 import momoi.mod.qqpro.Colors
 import momoi.mod.qqpro.Settings
 import momoi.mod.qqpro.child
-import momoi.mod.qqpro.hook.action.CurrentGroupMembers
 import momoi.mod.qqpro.hook.action.SelfContact
 import momoi.mod.qqpro.lib.RadiusBackgroundSpan
 import momoi.mod.qqpro.lib.dp
@@ -49,6 +48,15 @@ private fun MemberInfo.memberType() = when {
 
 fun MemberInfo.levelTagSpan(): CharSequence {
     val type = memberType()
+    // Level display removed: the kernel never populates MemberInfo.memberLevel
+    // and the server refuses getMemberExtInfo, so only render role / special-title
+    // tags. Normal members get no tag at all.
+    val label = when {
+        !memberSpecialTitle.isNullOrEmpty() -> memberSpecialTitle!!
+        type == TYPE_OWNER -> "群主"
+        type == TYPE_ADMIN -> "管理员"
+        else -> return ""
+    }
     return buildSpannedString {
         inSpans(
             RadiusBackgroundSpan(
@@ -67,40 +75,37 @@ fun MemberInfo.levelTagSpan(): CharSequence {
             ),
             RelativeSizeSpan(0.8f)
         ) {
-            append("LV")
-            // memberLevel from the member-list APIs is never populated; prefer
-            // the real level fetched via getMemberExtInfo (keyed by uin).
-            append((CurrentGroupMembers.levels[uin] ?: memberLevel).toString())
-            if (!memberSpecialTitle.isNullOrEmpty()) {
-                append(" $memberSpecialTitle")
-            } else {
-                when (type) {
-                    TYPE_OWNER -> append(" 群主")
-                    TYPE_ADMIN -> append(" 管理员")
-                }
-            }
+            append(label)
         }
     }
 }
 
 fun MemberInfo.toDisplay(): CharSequence {
     val isSelf = uid == SelfContact.peerUid
+    val tag = levelTagSpan()
     return buildSpannedString {
         if (isSelf) {
             append(displayName())
-            append(" ")
-        }
-        append(levelTagSpan())
-        if (!isSelf) {
-            append(" ")
+            if (tag.isNotEmpty()) {
+                append(" ")
+                append(tag)
+            }
+        } else {
+            if (tag.isNotEmpty()) {
+                append(tag)
+                append(" ")
+            }
             append(displayName())
         }
     }
 }
 
 fun MemberInfo.toDisplayTwoLine(): CharSequence = buildSpannedString {
-    append(levelTagSpan())
-    append("\n")
+    val tag = levelTagSpan()
+    if (tag.isNotEmpty()) {
+        append(tag)
+        append("\n")
+    }
     append(displayName())
 }
 
