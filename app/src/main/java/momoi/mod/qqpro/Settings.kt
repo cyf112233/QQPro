@@ -29,6 +29,11 @@ object Settings {
     // list as an overlay over the chat (like the long-press menu). Removes the attachment
     // ViewPager page (友: 聊天+设置 两页; 非好友: 仅聊天), and moves 表情 into the overlay list.
     val attachmentOverlay = BooleanPref("attachmentOverlay", false)
+    // Rich chat titlebar: replaces the top page-indicator strip with a bar holding a back
+    // button, the indicator dots, other-chats unread count, group member count and the
+    // group/contact name. titlebarHeight (dp) defaults to the current strip height (16).
+    val enableTitlebar = BooleanPref("enableTitlebar", false)
+    val titlebarHeight = FloatPref("titlebarHeight", 16f)
     // Use the in-app camera for 拍照. When off, launch the system camera app (third-party)
     // via an intent for photos. Video recording always uses the system app (the in-app
     // camera can't record video).

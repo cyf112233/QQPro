@@ -200,6 +200,22 @@ fun atIconDrawable(): Drawable = object : Drawable() {
     override fun getOpacity() = PixelFormat.TRANSLUCENT
 }
 
+/** A left-pointing chevron "‹" — the titlebar back button. */
+fun backIconDrawable(): Drawable = iconDrawable { c, box, stroke, _ ->
+    val w = box.width()
+    stroke.strokeWidth = w * 0.10f
+    val tipX = box.centerX() - w * 0.14f
+    val rightX = box.centerX() + w * 0.18f
+    val top = box.centerY() - w * 0.26f
+    val bottom = box.centerY() + w * 0.26f
+    val path = Path().apply {
+        moveTo(rightX, top)
+        lineTo(tipX, box.centerY())
+        lineTo(rightX, bottom)
+    }
+    c.drawPath(path, stroke)
+}
+
 /** A simple "+" — the attachment / open-panel icon used on the input bar. */
 fun plusIconDrawable(): Drawable = iconDrawable { c, box, stroke, _ ->
     val w = box.width()

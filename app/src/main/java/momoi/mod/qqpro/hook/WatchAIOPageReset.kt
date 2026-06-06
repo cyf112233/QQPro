@@ -9,6 +9,7 @@ import moye.wearqq.IMEOperation
 import momoi.anno.mixin.Mixin
 import momoi.mod.qqpro.Settings
 import momoi.mod.qqpro.findAll
+import momoi.mod.qqpro.lib.dp
 import momoi.mod.qqpro.hook.action.GalleryMultiSelectState
 import momoi.mod.qqpro.util.ChatBackground
 import momoi.mod.qqpro.util.Utils
@@ -30,6 +31,12 @@ class WatchAIOPageReset : WatchAIOFragment() {
             ChatBackground.applyTo(this.d)
         }
         if (Settings.attachmentOverlay.value) fixIndicatorIcons(view)
+        if (Settings.enableTitlebar.value) {
+            RichTitlebar.build(this, view as ViewGroup)
+            // Push the chat content below the (possibly taller) titlebar.
+            val h = Settings.titlebarHeight.value.toInt().dp
+            f?.let { it.setPadding(it.paddingLeft, h, it.paddingRight, it.paddingBottom) }
+        }
     }
 
     /**
