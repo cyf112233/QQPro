@@ -14,6 +14,9 @@ import androidx.core.app.RemoteInput
 import com.tencent.commonsdk.util.notification.QQNotificationManager
 import com.tencent.mobileqq.qroute.QRoute
 import com.tencent.qqnt.global.settings.api.IGlobalSettingsApi
+import com.tencent.qqnt.kernel.api.IAvatarService
+import com.tencent.qqnt.kernel.api.IKernelService
+import com.tencent.qqnt.kernel.nativeinterface.AvatarSize
 import com.tencent.qqnt.kernel.nativeinterface.Contact
 import com.tencent.qqnt.kernel.nativeinterface.DeleteRecentContactInfo
 import com.tencent.qqnt.kernel.nativeinterface.IKernelRecentContactListener
@@ -121,7 +124,10 @@ private fun postChatNotification(facade: NotificationFacade, app: AppRuntime, ms
         "你收到一条新消息"
     }
 
-    val avatar: Bitmap? = runCatching { facade.n(msg, false) }.getOrNull()
+    // Large icon = this chat's avatar. For groups the avatar isn't keyed by uid (so the native
+    // facade.n() — which calls getAvatarPath(peerUid) — finds nothing); groups must be fetched via
+    // getGroupAvatarPath(peerUin). Fall back to the QQ app icon only when neither resolves.
+    val avatar: Bitmap? = resolveChatAvatar(app, msg, facade)
         ?: BitmapFactory.decodeResource(ctx.resources, ctx.applicationInfo.icon)
 
     // Tap → open this exact chat (peerUin as a String, which MainActivity.onNewIntent expects).
@@ -202,6 +208,36 @@ private fun postChatNotification(facade: NotificationFacade, app: AppRuntime, ms
             Utils.log("NotificationReply: attached image to id=$notifyId")
         }
     }
+}
+
+/**
+ * Resolve the large-icon avatar for [msg]'s chat. Single chats (chatType 1) are keyed by uid, so
+ * the native [NotificationFacade.n] works; group chats (chatType 2) are keyed by group code and
+ * must use [IAvatarService.getGroupAvatarPath], and when the file isn't cached yet we kick off a
+ * background download so the next notification for that group has it. Returns null if no avatar
+ * could be decoded (caller falls back to the app icon).
+ */
+private fun resolveChatAvatar(
+    app: AppRuntime,
+    msg: RecentContactInfo,
+    facade: NotificationFacade,
+): Bitmap? {
+    if (msg.chatType == 2) {
+        val avatarService = runCatching {
+            (app.getRuntimeService(IKernelService::class.java, "") as IKernelService).avatarService
+        }.getOrNull() ?: return null
+        val path = runCatching { avatarService.getGroupAvatarPath(msg.peerUin, AvatarSize.SMALL) }.getOrNull()
+        val bmp = path?.takeIf { it.isNotEmpty() && File(it).exists() }
+            ?.let { runCatching { BitmapFactory.decodeFile(it) }.getOrNull() }
+        if (bmp != null) return bmp
+        // Not cached yet — fetch it for next time, and let this notification use the app icon.
+        runCatching {
+            avatarService.forceDownloadGroupAvatar(msg.peerUin, AvatarSize.SMALL, null)
+        }
+        Utils.log("NotificationReply: group avatar not cached (group=${msg.peerUin}), downloading")
+        return null
+    }
+    return runCatching { facade.n(msg, false) }.getOrNull()
 }
 
 /**
