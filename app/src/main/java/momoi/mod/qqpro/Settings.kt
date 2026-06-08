@@ -34,6 +34,9 @@ object Settings {
     // group/contact name. titlebarHeight (dp) defaults to the current strip height (16).
     val enableTitlebar = BooleanPref("enableTitlebar", false)
     val titlebarHeight = FloatPref("titlebarHeight", 16f)
+    // Move the home/main page's page-indicator dots to the bottom and scale their size by
+    // titlebarHeight (relative to the default 16dp).
+    val bottomMainNav = BooleanPref("bottomMainNav", false)
     // Use the in-app camera for 拍照. When off, launch the system camera app (third-party)
     // via an intent for photos. Video recording always uses the system app (the in-app
     // camera can't record video).

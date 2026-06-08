@@ -103,6 +103,11 @@ object RichTitlebar {
             }
 
             val bar = FrameLayout(ctx)
+            // Darken the header behind the title so the white text/badge stay readable over the chat.
+            bar.background = android.graphics.drawable.GradientDrawable(
+                android.graphics.drawable.GradientDrawable.Orientation.TOP_BOTTOM,
+                intArrayOf(0xAA_000000.toInt(), 0x00_000000)
+            )
             bar.addView(row, FrameLayout.LayoutParams(FILL, FILL))
 
             val badgeView = TextView(ctx).apply {
