@@ -257,6 +257,17 @@ private fun sendPickedImages(uris: List<Uri>) {
     }.onFailure { Utils.log("imagepick: sendPickedImages failed: $it") }
 }
 
+/**
+ * Build+send a video picked from the in-app gallery to the current chat. The native gallery tap
+ * path only pops the picker without sending in our launch context, so we send it ourselves. Runs
+ * the (heavy) build/send on a background thread and flags the chat to return to page 0 on resume.
+ */
+fun sendGalleryVideo(path: String) {
+    GalleryMultiSelectState.goToChatOnResume = true
+    Thread { sendVideo(path, null) }.start()
+    Utils.log("gallery: send video -> $path")
+}
+
 private fun sendVideo(origPath: String, fallback: Uri?) {
     runCatching {
         if (!ensureFile(origPath, fallback)) { Utils.log("camera: video empty $origPath"); return }

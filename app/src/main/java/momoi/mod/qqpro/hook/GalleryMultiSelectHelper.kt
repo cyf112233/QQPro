@@ -35,6 +35,10 @@ class GalleryMultiSelectHelper(private val fragment: GalleryFragment) {
     // (long-press UP or single-tap-in-multiselect). Cleared on every ACTION_DOWN.
     private var interceptNextUp = false
 
+    // Set once we've initiated a send+pop so a fast double-tap can't fire the action twice
+    // (which pops/sends twice and crashes). Sticky for the lifetime of this helper instance.
+    private var actionConsumed = false
+
     private val overlayPaint = Paint().apply { color = Color.parseColor("#661B9AF7") }
 
     // ---- public API called from the mixin hook --------------------------------
@@ -52,6 +56,12 @@ class GalleryMultiSelectHelper(private val fragment: GalleryFragment) {
 
     fun setupGestureDetector(rv: RecyclerView) {
         val gesture = GestureDetector(rv.context, makeGestureListener(rv))
+        // Disable double-tap detection. Otherwise the 2nd tap of a fast double-tap is swallowed by
+        // GestureDetector (routed to onDoubleTap, not onSingleTapUp), so we never intercept its UP
+        // and it leaks to the native item onClick — which just pops the picker (our launch context
+        // has no fragment-result listener), dismissing the gallery. With this off, every tap fires
+        // onSingleTapUp and is handled/intercepted normally.
+        gesture.setOnDoubleTapListener(null)
         rv.addOnItemTouchListener(makeTouchListener(gesture))
     }
 
@@ -64,6 +74,7 @@ class GalleryMultiSelectHelper(private val fragment: GalleryFragment) {
         else selectedPaths.add(path)
         updateSendButton()
         rv.invalidateItemDecorations()
+        Utils.log("Gallery toggleSelection now selected=${selectedPaths.size} multiSelectMode=$multiSelectMode")
         if (multiSelectMode && selectedPaths.isEmpty()) exitMultiSelectMode(rv)
     }
 
@@ -76,9 +87,12 @@ class GalleryMultiSelectHelper(private val fragment: GalleryFragment) {
             return
         }
 
+        // Build in SELECTION order (selectedPaths is a LinkedHashSet → insertion-ordered),
+        // not gallery display order, so the images send in the order the user tapped them.
         val allItems = fragment.i?.currentList ?: emptyList()
-        val selectedItems = allItems.filter { selectedPaths.contains(it.c) }
-        Utils.log("MultiSelect selectedItems=${selectedItems.size}, building image elements")
+        val byPath = allItems.associateBy { it.c }
+        val selectedItems = selectedPaths.mapNotNull { byPath[it] }
+        Utils.log("MultiSelect selectedItems=${selectedItems.size} (selection order), building image elements")
 
         val elements = ArrayList<MsgElement>()
         for (item in selectedItems) {
@@ -149,8 +163,15 @@ class GalleryMultiSelectHelper(private val fragment: GalleryFragment) {
             if (pos < 0) return
             val item = fragment.i?.currentList?.getOrNull(pos) ?: return
             val path = item.c ?: return
-            // Multi-select supports images only (C == 1 means video); videos still send via tap.
-            if (item.C == 1) return
+            // Multi-select supports images only (C == 1 means video). Long-pressing a video can't
+            // start a selection — tell the user and consume so the gesture doesn't fall through.
+            if (item.C == 1) {
+                Utils.log("Gallery onLongPress video pos=$pos (not supported)")
+                Utils.toast(rv.context, "视频不支持多选")
+                interceptNextUp = true
+                return
+            }
+            Utils.log("Gallery onLongPress pos=$pos multiSelectMode=$multiSelectMode")
             if (!multiSelectMode) enterMultiSelectMode()
             // consume the ACTION_UP that follows a long-press so the item's click doesn't fire
             interceptNextUp = true
@@ -158,19 +179,29 @@ class GalleryMultiSelectHelper(private val fragment: GalleryFragment) {
         }
 
         override fun onSingleTapUp(e: MotionEvent): Boolean {
+            Utils.log("Gallery onSingleTapUp multiSelectMode=$multiSelectMode selected=${selectedPaths.size}")
             if (!multiSelectMode) {
                 val child = rv.findChildViewUnder(e.x, e.y) ?: return false
                 val pos = rv.getChildAdapterPosition(child)
                 val item = if (pos >= 0) fragment.i?.currentList?.getOrNull(pos) else null
                 val path = item?.c ?: return false
                 if (item.C == 1) {
-                    // Video: let the native handler build the (complex) video element and send.
-                    // Drop any stale pending image first so it can't ride along with the video.
+                    // Video: build+send it ourselves. The native item tap only fires a fragment
+                    // result + pop, and our gallery launch has no result listener, so delegating to
+                    // native just dismisses the picker without sending. Drop any stale pending image
+                    // first so it can't ride along, then send the video directly (heavy build runs
+                    // off the UI thread inside sendGalleryVideo) and pop.
+                    if (actionConsumed) { interceptNextUp = true; return true } // block double send
                     IMEOperation.extraMsg.clear()
-                    return false
+                    interceptNextUp = true
+                    actionConsumed = true
+                    sendGalleryVideo(path)
+                    fragment.pop()
+                    return true
                 }
                 // Image: take over the tap so the send routes through the input-bar preview without
                 // the native selector.invoke(0) that would force-switch to the chat page even on cancel.
+                if (actionConsumed) return true  // guard against a fast double-tap popping twice
                 val element = try {
                     WatchMsgUtil.a.a(path, 0)
                 } catch (t: Throwable) {
@@ -179,15 +210,26 @@ class GalleryMultiSelectHelper(private val fragment: GalleryFragment) {
                 }
                 // consume this UP so the item's native click (which would send immediately) doesn't fire
                 interceptNextUp = true
+                actionConsumed = true
                 attachToImeAndOpen(listOf(element))
                 return true
             }
-            val child = rv.findChildViewUnder(e.x, e.y) ?: return false
+            val child = rv.findChildViewUnder(e.x, e.y)
+            if (child == null) { Utils.log("Gallery multiselect tap: child=null"); return false }
             val pos = rv.getChildAdapterPosition(child)
-            if (pos < 0) return false
-            val item = fragment.i?.currentList?.getOrNull(pos) ?: return false
-            val path = item.c ?: return false
-            if (item.C == 1) return false  // ignore videos in multi-select
+            if (pos < 0) { Utils.log("Gallery multiselect tap: pos<0"); return false }
+            val item = fragment.i?.currentList?.getOrNull(pos)
+            if (item == null) { Utils.log("Gallery multiselect tap: item=null pos=$pos"); return false }
+            val path = item.c
+            if (path == null) { Utils.log("Gallery multiselect tap: path=null pos=$pos"); return false }
+            if (item.C == 1) {
+                // Video can't be multi-selected. Tell the user and consume the tap so it doesn't
+                // leak to the native item onClick (which would pop/dismiss the picker).
+                Utils.log("Gallery multiselect tap: video pos=$pos (not supported)")
+                Utils.toast(rv.context, "视频不支持多选")
+                interceptNextUp = true
+                return true
+            }
             // consume this UP event so the item's default click (open viewer) doesn't fire
             interceptNextUp = true
             toggleSelection(path, rv)
@@ -233,6 +275,10 @@ class GalleryMultiSelectHelper(private val fragment: GalleryFragment) {
             color = Color.WHITE; style = Paint.Style.STROKE; strokeWidth = 2f
             strokeCap = Paint.Cap.ROUND
         }
+        private val numberPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = Color.WHITE; textAlign = Paint.Align.CENTER
+            textSize = radius * 1.1f; isFakeBoldText = true
+        }
 
         override fun onDrawOver(c: Canvas, parent: RecyclerView, state: RecyclerView.State) {
             if (!multiSelectMode) return
@@ -255,9 +301,10 @@ class GalleryMultiSelectHelper(private val fragment: GalleryFragment) {
 
                 if (selected) {
                     c.drawCircle(cx, cy, radius, circleFill)
-                    val s = radius * 0.35f
-                    c.drawLine(cx - s, cy, cx - s * 0.3f, cy + s * 0.8f, checkPaint)
-                    c.drawLine(cx - s * 0.3f, cy + s * 0.8f, cx + s, cy - s * 0.6f, checkPaint)
+                    // Show the 1-based selection order so the user can see/verify the send order.
+                    val order = selectedPaths.indexOf(path) + 1
+                    val baseline = cy - (numberPaint.descent() + numberPaint.ascent()) / 2f
+                    c.drawText(order.toString(), cx, baseline, numberPaint)
                 } else {
                     c.drawCircle(cx, cy, radius, circleBorder)
                 }
