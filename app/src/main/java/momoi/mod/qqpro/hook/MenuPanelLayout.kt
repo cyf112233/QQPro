@@ -114,7 +114,10 @@ class MenuPanelLayout(p0: (Int) -> Unit, p1: Boolean) : MenuFrame(p0, p1) {
         // Card container: horizontal row, dark rounded background, unified margin + padding.
         ll.orientation = LinearLayout.HORIZONTAL
         ll.gravity = Gravity.CENTER_VERTICAL
-        ll.background = roundCornerDrawable(0x80_242424.toInt(), 14.dpf)
+        // Use the exact same drawable the long-press context-menu cards use
+        // (R.drawable.watch_normal_button_white_bg) so they look identical — no hand-picked alpha.
+        ll.background = androidx.core.content.ContextCompat.getDrawable(ll.context, 0x7e080ea8)
+            ?: roundCornerDrawable(0x80_242424.toInt(), 14.dpf)
         ll.cardMargin()
         ll.setPadding(14.dp, 10.dp, 14.dp, 10.dp)
 
