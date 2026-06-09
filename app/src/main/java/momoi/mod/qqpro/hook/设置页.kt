@@ -123,6 +123,7 @@ class 设置页 : SettingsActivity() {
             textInput("对方气泡颜色", "16进制如 #2B6CF6，留空为默认", Settings.bubbleColorOther)
             chatBackgroundPicker()
             slider("背景变暗程度", "调暗背景图以便看清文字，重进聊天页生效", Settings.chatBgDarken, min = 0f, max = 0.9f)
+            switch("自动检查更新", "启动时检查 QQ Max 新版本，可在关于页手动检查", Settings.autoUpdateCheck)
 
             add<View>()
                 .height(64.dp)

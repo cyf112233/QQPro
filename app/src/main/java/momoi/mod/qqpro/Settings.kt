@@ -7,6 +7,9 @@ import momoi.mod.qqpro.util.Utils
 object Settings {
     val sp: SharedPreferences = Utils.application.getSharedPreferences("qqpro", 0)
     val wear: SharedPreferences = Utils.application.getSharedPreferences("wearqq", 0)
+    // OTAManager2 stores its own enable flag here; share it so the settings toggle and the
+    // update dialog's "不再提醒" button reflect the same state.
+    val ota: SharedPreferences = Utils.application.getSharedPreferences("OTAManager2Prefs", 0)
 
     // ===== QQ Pro 设置 (by java30433) =====
     val scale = FloatPref("scale", 0.7f)
@@ -77,6 +80,9 @@ object Settings {
     // 0 = original image, 0.9 = almost black. Applied as a black overlay on top
     // of the picked image. Takes effect the next time a chat is opened.
     val chatBgDarken = FloatPref("chatBgDarken", 0.35f)
+    // Automatically check for a new QQ Max release on launch (via OTAManager2). Backed by
+    // OTAManager2's own prefs so the toggle and the dialog's "不再提醒" share one state.
+    val autoUpdateCheck = OtaBooleanPref("update_check_enabled", true)
 
     // ===== NWear QQ 设置 (by 爅峫) — backed by the base app's "wearqq" prefs =====
     val singleLineInput = WearBooleanPref("single_line_input", false)
@@ -148,6 +154,14 @@ class WearBooleanPref(private val key: String, def: Boolean) :
             }
             return Settings.wear.getBoolean(key, def)
         }
+    }
+}
+
+/** Boolean setting stored in OTAManager2's SharedPreferences (shared with the update library). */
+class OtaBooleanPref(private val key: String, def: Boolean) :
+    Pref<Boolean>(Settings.ota.getBoolean(key, def)) {
+    override fun set(value: Boolean) = Settings.ota.edit {
+        putBoolean(key, value)
     }
 }
 
