@@ -138,11 +138,14 @@ object AIOCell {
                 // hide the avatar/nick header when the previous (older) message in
                 // the list is from the same sender, so consecutive messages only
                 // show the header once.
-                val hideHeader = Settings.hideRepeatedSender.value && run {
-                    val idx = CurrentMsgList.getMsgIndex(item)
-                    val prev = CurrentMsgList.msgList.value.getOrNull(idx - 1)
-                    prev != null && prev.d.senderUid == senderUid
-                }
+                val hideHeader = Settings.hideRepeatedSender.value
+                    && item.d.msgType != NTMsgType.GRAYTIPS
+                    && run {
+                        val idx = CurrentMsgList.getMsgIndex(item)
+                        val prev = CurrentMsgList.msgList.value.getOrNull(idx - 1)
+                        prev != null && prev.d.msgType != NTMsgType.GRAYTIPS
+                            && prev.d.senderUid == senderUid
+                    }
                 if (hideHeader) {
                     // Keep the view VISIBLE so the widget's onMeasure measures it
                     // (it reads getMeasuredHeight() ignoring visibility); collapse
@@ -205,6 +208,7 @@ object AIOCell {
             } else {
                 LinkPreview.hide(widget)
             }
+            PlusOneButton.bind(widget, item)
         }
     }
 
