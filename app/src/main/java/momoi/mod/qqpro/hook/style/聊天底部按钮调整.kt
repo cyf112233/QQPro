@@ -104,10 +104,10 @@ class 聊天底部按钮调整() : `InputBarController$inputContent$2`() {
                             if (Settings.attachmentOverlay.value) {
                                 // Emoji button becomes a "+" that opens the attachment overlay.
                                 emojiBtn.setImageDrawable(plusIconDrawable())
-                                emojiBtn.clickable { AttachmentOverlay.show(emojiBtn, emoji) }
+                                emojiBtn.clickable { hideIme(emojiBtn); AttachmentOverlay.show(emojiBtn, emoji) }
                             } else {
                                 emojiBtn.bitmapDecodeAssets("pro/ic_emoji.png")
-                                emojiBtn.clickable { emoji.callOnClick() }
+                                emojiBtn.clickable { hideIme(emojiBtn); emoji.callOnClick() }
                             }
                             editText = add<ImeEditText>().height(FILL).weight(1f)
                                 .background(null)
@@ -140,10 +140,10 @@ class 聊天底部按钮调整() : `InputBarController$inputContent$2`() {
                             .scaleType(ImageView.ScaleType.FIT_CENTER).background(roundBg).padding(8.dp)
                         if (Settings.attachmentOverlay.value) {
                             left.setImageDrawable(plusIconDrawable())
-                            left.clickable { AttachmentOverlay.show(left, emoji) }
+                            left.clickable { hideIme(left); AttachmentOverlay.show(left, emoji) }
                         } else {
                             left.bitmapDecodeAssets("pro/ic_emoji.png")
-                            left.clickable { emoji.callOnClick() }
+                            left.clickable { hideIme(left); emoji.callOnClick() }
                         }
                         voice.background(roundBg)
                         val input = if (Settings.text.isEmpty()) {
@@ -185,6 +185,18 @@ class 聊天底部按钮调整() : `InputBarController$inputContent$2`() {
             editText.setText("")
         }.onFailure { Utils.log("inline chat send failed: $it") }
     }
+}
+
+/**
+ * Hide the soft keyboard if it's open. Called when the "+"/emoji button is tapped so the IME
+ * collapses automatically before the attachment overlay or emoji panel opens.
+ * Top-level (not inside the @Mixin body) to stay clear of the mixin-copy package issues.
+ */
+fun hideIme(view: View) {
+    runCatching {
+        val imm = view.context.getSystemService(android.view.inputmethod.InputMethodManager::class.java)
+        imm?.hideSoftInputFromWindow(view.windowToken, 0)
+    }.onFailure { Utils.log("hideIme failed: $it") }
 }
 
 /**
