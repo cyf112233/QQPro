@@ -33,6 +33,9 @@ object Settings {
     // button, the indicator dots, other-chats unread count, group member count and the
     // group/contact name. titlebarHeight (dp) defaults to the current strip height (16).
     val enableTitlebar = BooleanPref("enableTitlebar", false)
+    // Show the other-chats unread count badge in the chat titlebar. When off, the
+    // titlebar shows only the name + member count (no red badge).
+    val titlebarShowUnread = BooleanPref("titlebarShowUnread", true)
     val titlebarHeight = FloatPref("titlebarHeight", 16f)
     // Move the home/main page's page-indicator dots to the bottom and scale their size by
     // titlebarHeight (relative to the default 16dp).

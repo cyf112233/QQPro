@@ -152,6 +152,10 @@ object RichTitlebar {
 
     private fun applyUnread() {
         val b = badge ?: return
+        if (!Settings.titlebarShowUnread.value) {
+            b.post { b.visibility = View.GONE }
+            return
+        }
         val other = unread.entries.filter { it.key != peer }.sumOf { it.value }
         b.post {
             if (other > 0) {
