@@ -156,7 +156,7 @@ object GroupAvatarHook {
     //   [avatar] [LV badge]
     //            display name
     private fun applyAvatar(nickView: TextView, bitmap: Bitmap) {
-        val avatarSize = (nickView.textSize * 3).toInt()
+        val avatarSize = (nickView.textSize * Settings.avatarSizeScale.value).toInt()
         val drawable = BitmapDrawable(Utils.application.resources, bitmap).apply {
             setBounds(0, 0, avatarSize, avatarSize)
         }

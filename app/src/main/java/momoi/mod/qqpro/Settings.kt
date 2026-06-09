@@ -17,6 +17,8 @@ object Settings {
 
     // ===== QQ Max 设置 (by AILIFE) =====
     val showGroupAvatar = BooleanPref("showGroupAvatar", true)
+    // Group chat avatar size, as a multiple of the nickname text size. Default 3x.
+    val avatarSizeScale = FloatPref("avatarSizeScale", 3f)
     val hideRepeatedSender = BooleanPref("hideRepeatedSender", true)
     val inlineSendButton = BooleanPref("inlineSendButton", true)
     val inlineChatInput = BooleanPref("inlineChatInput", true)

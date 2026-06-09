@@ -100,6 +100,7 @@ class 设置页 : SettingsActivity() {
 
             section("QQ Max 设置", "终极版 by AILIFE")
             switch("群聊显示头像", "在群聊消息中显示用户头像和两行昵称", Settings.showGroupAvatar)
+            slider("头像大小", "群聊头像大小(相对昵称文字的倍数)，默认 3", Settings.avatarSizeScale, min = 1.5f, max = 6f)
             switch("合并连续消息头", "同一人连发多条时，只在第一条显示头像和昵称", Settings.hideRepeatedSender)
             switch("行内发送按钮", "输入页将发送键移到输入框右侧，左侧加关闭键取消发送", Settings.inlineSendButton)
             switch("聊天页直接输入", "在聊天页用输入框替换键盘键，有文字时麦克风键变发送键", Settings.inlineChatInput)
