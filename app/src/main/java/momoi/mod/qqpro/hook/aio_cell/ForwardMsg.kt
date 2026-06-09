@@ -275,6 +275,10 @@ class DetailFragment(private val contact: Contact, private val data: ForwardMsgD
                     .width(FILL)
                     .gravity(Gravity.CENTER)
                     .textColor(0xFF_FFFFFF.toInt())
+                    .apply {
+                        isSingleLine = true
+                        ellipsize = android.text.TextUtils.TruncateAt.END
+                    }
                     .clickable { dismiss() }
                 mRv = add<RecyclerView>()
                     .linearLayout()
