@@ -32,6 +32,7 @@ import momoi.mod.qqpro.lib.onCheckedChange
 import momoi.mod.qqpro.lib.onClick
 import momoi.mod.qqpro.lib.onProgressChanged
 import momoi.mod.qqpro.lib.padding
+import momoi.mod.qqpro.lib.SwipeBackLayout
 import momoi.mod.qqpro.lib.progressMax
 import momoi.mod.qqpro.lib.text
 import momoi.mod.qqpro.lib.textColor
@@ -65,7 +66,18 @@ class 设置页 : SettingsActivity() {
             .vertical()
             .padding(left = (2 * CARD_MARGIN_DP).dp, top = 10.dp, right = (2 * CARD_MARGIN_DP).dp, bottom = 10.dp)
         scroll.addView(root, FILL, WRAP)
-        setContentView(scroll)
+
+        // Watches without a hardware back button rely on a left-to-right swipe to leave a
+        // screen (the main activity gets this from QQ's fling framework). Wrap the settings
+        // content so the same gesture finishes this plain Activity.
+        val swipeBack = SwipeBackLayout(this).apply {
+            // Opaque background so the strip revealed while the content slides right
+            // doesn't flash the window background.
+            setBackgroundColor(0xFF_121212.toInt())
+            addView(scroll, FILL, FILL)
+            onSwipeBack = { finish() }
+        }
+        setContentView(swipeBack)
 
         root.content {
             section("NWear QQ 设置", "基础版 by 爅峫")
