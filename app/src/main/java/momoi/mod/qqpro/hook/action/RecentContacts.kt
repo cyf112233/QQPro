@@ -75,6 +75,11 @@ object RecentContacts {
 
     @Mixin
     abstract class Hook : WatchRecentItemBuilder() {
+        /** Sanitize the item's stored msgSummary in place so every setText path reads clean text. */
+        fun sanitizeItem(item: RecentContactChatItem) {
+            item.h?.let { info -> info.a?.let { info.a = sanitizeRecentSummary(it) } }
+        }
+
         override fun t(item: RecentContactChatItem, holder: WatchRecentContactHolder) {
             Utils.log("load recent contact: ${item.a.peerName}, unreadCnt: ${item.a.unreadCnt}, chatCnt: ${item.a.unreadChatCnt}, peerUid: ${item.a.peerUid}")
             map[item.a.peerUid] = Data(
@@ -82,8 +87,28 @@ object RecentContacts {
                 item.a.unreadCnt.toInt()
             )
             // Replace unrendered emoji garbage in the preview with a "[表情]" placeholder before binding.
-            item.h?.let { info -> info.a?.let { info.a = sanitizeRecentSummary(it) } }
+            sanitizeItem(item)
             super.t(item, holder)
+        }
+
+        /**
+         * Summary-only partial update (fires when returning from a chat / on incremental list diff):
+         * `m()` → `p()` → `q()` sets `item.summaryInfo.msgSummary` straight onto the TextView,
+         * bypassing the full bind in [t]. Sanitize here too or the garbage glyphs come back.
+         */
+        override fun q(item: RecentContactChatItem, holder: WatchRecentContactHolder) {
+            sanitizeItem(item)
+            super.q(item, holder)
+        }
+
+        /** Partial-bind dispatcher also calls setText directly when a payload list is present. */
+        override fun m(
+            holder: com.tencent.qqnt.chats.core.adapter.holder.BaseChatViewHolder<com.tencent.qqnt.chats.core.adapter.itemdata.BaseChatItem>,
+            item: RecentContactChatItem,
+            payload: List<Any?>,
+        ) {
+            sanitizeItem(item)
+            super.m(holder, item, payload)
         }
     }
 }
