@@ -263,7 +263,7 @@ class DetailFragment(private val contact: Contact, private val data: ForwardMsgD
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        return create<LinearLayout>(inflater.context)
+        val content = create<LinearLayout>(inflater.context)
             .vertical()
             .size(FILL, FILL)
             .background(0x77_000000)
@@ -403,6 +403,12 @@ class DetailFragment(private val contact: Contact, private val data: ForwardMsgD
                                 }
                         })
             }
+        // Wrap so a left-to-right swipe dismisses the viewer, for watches without a back
+        // button. Vertical drags pass through to the RecyclerView untouched.
+        return momoi.mod.qqpro.lib.SwipeBackLayout(inflater.context).apply {
+            addView(content, FILL, FILL)
+            onSwipeBack = { dismiss() }
+        }
     }
 }
 
