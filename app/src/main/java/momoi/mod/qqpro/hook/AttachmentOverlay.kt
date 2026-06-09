@@ -1,13 +1,16 @@
 package momoi.mod.qqpro.hook
 
+import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import android.widget.FrameLayout
 import androidx.activity.OnBackPressedCallback
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentManager
+import androidx.recyclerview.widget.RecyclerView
 import com.tencent.watch.aio_impl.ui.WatchAIOFragment
 import com.tencent.watch.aio_impl.ui.frames.MenuFrame
+import momoi.mod.qqpro.findAll
 import momoi.mod.qqpro.util.Utils
 
 /**
@@ -80,6 +83,13 @@ object AttachmentOverlay {
             menu.arguments = aio.arguments
             hosted = menu
             fm.beginTransaction().replace(inner.id, menu).commitNow()
+            // The hosted list fills the screen and consumes taps over its own bounds, so taps on
+            // the empty area inside it never reach the scrim. Detect taps that land on no list
+            // item and dismiss too (so any empty part of the panel closes the overlay).
+            inner.post {
+                (inner.findAll { it is RecyclerView } as? RecyclerView)
+                    ?.addOnItemTouchListener(EmptyTapDismiss)
+            }
             Utils.log("AttachmentOverlay: shown")
         }.onFailure { Utils.log("AttachmentOverlay.show failed: $it"); resetState() }
     }
@@ -101,6 +111,28 @@ object AttachmentOverlay {
         hostFm = null
         hosted = null
         backCallback = null
+    }
+
+    /**
+     * Dismisses the overlay when a tap (not a scroll) inside the list lands on empty space — i.e.
+     * not on any item. Returns false from intercept so list scrolling and item clicks are
+     * unaffected.
+     */
+    private object EmptyTapDismiss : RecyclerView.OnItemTouchListener {
+        private var downX = 0f
+        private var downY = 0f
+        override fun onInterceptTouchEvent(rv: RecyclerView, e: MotionEvent): Boolean {
+            when (e.actionMasked) {
+                MotionEvent.ACTION_DOWN -> { downX = e.x; downY = e.y }
+                MotionEvent.ACTION_UP -> {
+                    val moved = kotlin.math.hypot(e.x - downX, e.y - downY)
+                    if (moved < 16f && rv.findChildViewUnder(e.x, e.y) == null) dismiss()
+                }
+            }
+            return false
+        }
+        override fun onTouchEvent(rv: RecyclerView, e: MotionEvent) {}
+        override fun onRequestDisallowInterceptTouchEvent(disallow: Boolean) {}
     }
 
     private fun findAioFragment(anchor: View): WatchAIOFragment? {
