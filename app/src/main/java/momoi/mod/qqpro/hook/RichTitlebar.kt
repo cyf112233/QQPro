@@ -117,6 +117,10 @@ object RichTitlebar {
                 background = roundCornerDrawable(0xFF_E5443C.toInt(), 9999f)
                 setPadding(5.dp, 1.dp, 5.dp, 1.dp)
                 visibility = View.GONE
+                // Keep the unread badge above the (centered) name text regardless of relayout
+                // caused by the async member-count arriving or the badge toggling visibility.
+                elevation = 10.dp.toFloat()
+                translationZ = 10.dp.toFloat()
             }
             // A bit further right than the title inset (screen corner x2) to clear the corner fully.
             val badgeInset = corner * 2 + 12.dp
@@ -153,6 +157,8 @@ object RichTitlebar {
             if (other > 0) {
                 b.text = if (other > 99) "99+" else other.toString()
                 b.visibility = View.VISIBLE
+                b.bringToFront()
+                (b.parent as? View)?.invalidate()
             } else {
                 b.visibility = View.GONE
             }
