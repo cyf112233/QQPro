@@ -65,6 +65,9 @@ object Settings {
     // Try to resolve a client-side preview (icon/title/description) for links in
     // messages and show it below the text. Makes a network request per unique link.
     val enableLinkPreview = BooleanPref("enableLinkPreview", true)
+    // Max display height for chat images, as a fraction of the screen height. Caps tall
+    // images so they don't fill the watch screen. Default 0.5 (half the screen).
+    val picMaxHeightRatio = FloatPref("picMaxHeightRatio", 0.5f)
     // Rounded-corner radius (in dp) for chat bubbles, the merged-forward/chat-history
     // blocks and the reply block. 0 = square.
     val bubbleCornerRadius = FloatPref("bubbleCornerRadius", 10f)

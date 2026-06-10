@@ -118,6 +118,7 @@ class 设置页 : SettingsActivity() {
             switch("点击链接确认", "点击消息中的链接时，弹窗询问是否用浏览器打开", Settings.confirmOpenLink)
             switch("识别无前缀链接", "同时识别不带 http(s):// 的网址，如 example.com/x", Settings.wideUrlMatch)
             switch("链接预览", "消息含链接时尝试解析网站图标、标题与简介，显示在消息下方", Settings.enableLinkPreview)
+            slider("图片最大高度", "聊天图片最大显示高度(占屏幕高度比例)，默认 0.5", Settings.picMaxHeightRatio, min = 0.3f, max = 1f)
             slider("气泡圆角半径", "聊天气泡、合并转发/聊天记录块与回复块的圆角半径(dp)", Settings.bubbleCornerRadius, min = 0f, max = 24f)
             textInput("我的气泡颜色", "16进制如 #2B6CF6，留空为默认", Settings.bubbleColorSelf)
             textInput("对方气泡颜色", "16进制如 #2B6CF6，留空为默认", Settings.bubbleColorOther)

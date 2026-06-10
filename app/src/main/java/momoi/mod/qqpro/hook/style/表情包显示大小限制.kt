@@ -5,8 +5,15 @@ import android.content.res.Resources
 import com.tencent.watch.aio_impl.ui.widget.RoundBubbleImageView
 import me.jessyan.autosize.AutoSizeConfig
 import momoi.anno.mixin.Mixin
+import momoi.mod.qqpro.Settings
 
-val heightLimit = Resources.getSystem().displayMetrics.heightPixels * 0.5f
+/**
+ * Max image display height: the user-configured fraction of screen height
+ * ([Settings.picMaxHeightRatio], default 0.5). Computed live so changing the setting
+ * takes effect on the next measure without restarting.
+ */
+val heightLimit: Float
+    get() = Resources.getSystem().displayMetrics.heightPixels * Settings.picMaxHeightRatio.value
 
 @Mixin
 class 表情包显示大小限制(context: Context) : RoundBubbleImageView(context) {
