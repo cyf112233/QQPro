@@ -35,6 +35,9 @@ import momoi.mod.qqpro.util.Utils
  * top page-indicator strip of [WatchAIOFragment].
  */
 object RichTitlebar {
+    // Marks the titlebar bar so a rebuild can find and remove the previous one (idempotency).
+    private const val BAR_TAG = "qqpro_rich_titlebar"
+
     // Current bar's badge + chat, plus the live unread map, updated by the kernel listener.
     private var badge: TextView? = null
     private var peer: String = ""
@@ -44,6 +47,14 @@ object RichTitlebar {
     fun build(fragment: WatchAIOFragment, root: ViewGroup) {
         runCatching {
             val ctx = root.context
+
+            // Idempotency: onViewCreated can fire again when returning from the image viewer /
+            // avatar preview (same or recreated view tree). Drop any titlebar we built earlier so
+            // we don't stack a second bar (doubled gradient + badge) on top of the first.
+            while (true) {
+                val old = root.findAll { it.tag == BAR_TAG } ?: break
+                (old.parent as? ViewGroup)?.removeView(old) ?: break
+            }
             val args = fragment.arguments
             val chatType = args?.getInt("key_bundle_chat_type") ?: 0
             val isGroup = chatType == ChatType.GROUP
@@ -103,6 +114,7 @@ object RichTitlebar {
             }
 
             val bar = FrameLayout(ctx)
+            bar.tag = BAR_TAG
             // Darken the header behind the title so the white text/badge stay readable over the chat.
             bar.background = android.graphics.drawable.GradientDrawable(
                 android.graphics.drawable.GradientDrawable.Orientation.TOP_BOTTOM,
@@ -134,10 +146,13 @@ object RichTitlebar {
             }
 
             // Track this bar for live unread updates; seed from the cached conversation list.
+            // Don't clear `unread`: it's a singleton the kernel listener keeps live across rebuilds.
+            // On a rebuild (returning from the image/avatar viewer) the recent-contact list isn't
+            // re-rendered, so RecentContacts.map is stale/empty — clearing would blank the badge.
+            // Seed only keys we don't already have, preserving the live values.
             badge = badgeView
             peer = peerId
-            unread.clear()
-            RecentContacts.map.forEach { (k, v) -> unread[k] = v.unreadCntCached }
+            RecentContacts.map.forEach { (k, v) -> if (!unread.containsKey(k)) unread[k] = v.unreadCntCached }
             badgeView.addOnAttachStateChangeListener(object : View.OnAttachStateChangeListener {
                 override fun onViewAttachedToWindow(v: View) {}
                 override fun onViewDetachedFromWindow(v: View) { if (badge === badgeView) badge = null }
