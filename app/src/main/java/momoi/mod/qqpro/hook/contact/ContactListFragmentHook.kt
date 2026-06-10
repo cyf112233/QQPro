@@ -41,6 +41,10 @@ import momoi.mod.qqpro.util.Utils
 @Mixin
 class ContactListFragmentHook : ContactListFragment() {
 
+    // The list RecyclerView, captured in Y(), plus a one-shot flag to reset scroll to the top.
+    private var recycler: RecyclerView? = null
+    private var initialTopPending = true
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         if (!Settings.contactSections.value) return
@@ -51,8 +55,20 @@ class ContactListFragmentHook : ContactListFragment() {
             val liveData = viewModel.field("c") as LiveData<Any?>
             liveData.observe(this, Observer { state ->
                 state ?: return@Observer
-                runCatching { submitList(adapter, rebuild(state, viewModel)) }
-                    .onFailure { Utils.log("ContactListFragmentHook: rebuild/submit failed: $it") }
+                runCatching {
+                    val list = rebuild(state, viewModel)
+                    // Items beyond the fixed header (加好友 + 两条通知) mean real contacts arrived.
+                    val hasContent = list.size > 3
+                    submitList(adapter, list) {
+                        // The rebuilt list is submitted after the stock one; DiffUtil otherwise keeps
+                        // the prior anchor item, leaving a fresh open scrolled into the middle. Force
+                        // the top once, on the first content-bearing submit.
+                        if (initialTopPending) {
+                            recycler?.scrollToPosition(0)
+                            if (hasContent) initialTopPending = false
+                        }
+                    }
+                }.onFailure { Utils.log("ContactListFragmentHook: rebuild/submit failed: $it") }
             })
         }.onFailure { Utils.log("ContactListFragmentHook onCreate: $it") }
     }
@@ -60,6 +76,7 @@ class ContactListFragmentHook : ContactListFragment() {
     override fun Y(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         val v = super.Y(inflater, container, savedInstanceState)
         if (Settings.contactSections.value && v is RecyclerView) {
+            recycler = v
             runCatching { v.addOnChildAttachStateChangeListener(HeaderStyler(v, field("i")!!)) }
                 .onFailure { Utils.log("ContactListFragmentHook Y: $it") }
         }
@@ -131,7 +148,19 @@ class ContactListFragmentHook : ContactListFragment() {
         }.onFailure { Utils.log("ContactListFragmentHook navigate $actionResName: $it") }
     }
 
-    private fun submitList(adapter: Any, list: List<ContactBaseItem>) {
+    private fun submitList(adapter: Any, list: List<ContactBaseItem>, commit: Runnable? = null) {
+        if (commit != null) {
+            // ListAdapter.submitList(List, Runnable) runs the callback after the diff is applied.
+            val ok = runCatching {
+                adapter.javaClass.getMethod("submitList", List::class.java, Runnable::class.java)
+                    .invoke(adapter, list, commit)
+            }.isSuccess
+            if (ok) return
+            // R8 may have stripped the 2-arg overload — submit then post the callback instead.
+            adapter.javaClass.getMethod("submitList", List::class.java).invoke(adapter, list)
+            recycler?.post(commit)
+            return
+        }
         adapter.javaClass.getMethod("submitList", List::class.java).invoke(adapter, list)
     }
 
