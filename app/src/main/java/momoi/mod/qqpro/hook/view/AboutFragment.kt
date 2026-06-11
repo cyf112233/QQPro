@@ -76,6 +76,18 @@ class AboutFragment : MyDialogFragment() {
                 .textColor(0xFF_BBBBBB)
                 .gravity(Gravity.CENTER)
                 .padding(bottom = 12.dp)
+                .clickable {
+                    // simple tap counter stored in a closure
+                    val cnt = (this.getTag("tap_cnt") as? Int) ?: 0
+                    val newCnt = cnt + 1
+                    this.setTag("tap_cnt", newCnt)
+                    if (newCnt >= 5) {
+                        // reset counter and launch test activity
+                        this.setTag("tap_cnt", 0)
+                        val intent = android.content.Intent(ctx, TestActivity::class.java)
+                        ctx.startActivity(intent)
+                    }
+                }
 
             add<TextView>()
                 .text("NWear QQ · 爅峫\nQQ Pro · java30433\nQQ Max · AILIFE")
