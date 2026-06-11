@@ -80,6 +80,7 @@ class AboutFragment : MyDialogFragment() {
                 .padding(bottom = 12.dp)
                 .clickable {
                     // simple tap counter stored in the view's tag
+                    // The clickable lambda runs with the TextView as the receiver
                     val view = this as android.view.View
                     val cnt = (view.getTag() as? Int) ?: 0
                     val newCnt = cnt + 1
@@ -87,6 +88,8 @@ class AboutFragment : MyDialogFragment() {
                     if (newCnt >= 5) {
                         view.setTag(0)
                         val intent = Intent(ctx, TestActivity::class.java)
+                        // Ensure we can start from a non-activity context
+                        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                         ctx.startActivity(intent)
                     }
                 }
