@@ -19,8 +19,8 @@ import androidx.appcompat.app.AlertDialog;
  * 2. HangWatcher – monitors the main thread for long stalls (>5 s) and shows a similar dialog.
  */
 public class CrashApplication extends Application {
-    private static final String PREF_NAME = "watchdog_prefs";
-    private static final String KEY_CRASH_REPORT = "crash_report";
+    public static final String PREF_NAME = "watchdog_prefs";
+    public static final String KEY_CRASH_REPORT = "crash_report";
 
     @Override
     public void onCreate() {
