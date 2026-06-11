@@ -1,25 +1,13 @@
 package byd.cxkcxkckx.watchdog;
 
-import android.content.ClipData;
-import android.content.ClipboardManager;
-import android.content.Context;
-import android.content.Intent;
 import android.content.SharedPreferences;
-import android.os.Build;
+import android.content.Context;
 import android.os.Handler;
 import android.os.Looper;
-import android.util.Log;
-
-import androidx.appcompat.app.AlertDialog;
-
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
-
-import java.util.Map;
 
 /**
- * ANR‑like watcher that detects main thread stalls and shows/saves a structured report.
+ * ANR-like watcher that detects main thread stalls (>5s) and persists a hang report
+ * for viewing on the second app launch after the hang is detected.
  */
 public class HangWatcher {
     private static final long CHECK_INTERVAL_MS = 1000; // check every second
@@ -67,70 +55,29 @@ public class HangWatcher {
     };
 
     private void onHangDetected(long durationMs) {
-        final String report = buildReport(durationMs);
-        // Save structured report for next launch & immediate sharing
+        final String report = String.format("应用卡死 %d ms\n线程堆栈:\n%s", durationMs, buildThreadDump());
+        
+        // Save report synchronously (will be shown on second launch)
         try {
             SharedPreferences sp = context.getSharedPreferences(CrashApplication.PREF_NAME, Context.MODE_PRIVATE);
-            sp.edit().putString(CrashApplication.KEY_CRASH_REPORT, report).apply();
+            sp.edit()
+                    .putString(CrashApplication.KEY_CRASH_REPORT, report)
+                    .putBoolean(CrashApplication.KEY_REPORT_SHOWN, false)
+                    .commit();
         } catch (Exception ignored) {}
-
-        // Show dialog on main thread
-        mainHandler.post(() -> {
-            try {
-                JSONObject json = new JSONObject(report);
-                String summary = String.format("应用卡死 %d ms。\n线程: %s", durationMs, json.optString("thread", ""));
-                new AlertDialog.Builder(context)
-                        .setTitle("程序卡死")
-                        .setMessage(summary + "\n\n点击复制或分享报告给开发者。")
-                        .setPositiveButton("复制报告", (d, w) -> {
-                            ClipboardManager cm = (ClipboardManager) context.getSystemService(ClipboardManager.class);
-                            ClipData clip = ClipData.newPlainText("Hang Report", report);
-                            cm.setPrimaryClip(clip);
-                        })
-                        .setNeutralButton("分享", (d, w) -> {
-                            Intent share = new Intent(Intent.ACTION_SEND);
-                            share.setType("text/plain");
-                            share.putExtra(Intent.EXTRA_TEXT, report);
-                            share.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                            context.startActivity(share);
-                        })
-                        .setNegativeButton("关闭", null)
-                        .setCancelable(false)
-                        .show();
-            } catch (JSONException e) {
-                Log.e("HangWatcher", "show dialog failed", e);
-            }
-        });
+        
+        // No dialog is shown; report will appear on second launch
     }
 
-    private String buildReport(long durationMs) {
-        JSONObject json = new JSONObject();
-        try {
-            json.put("type", "hang");
-            json.put("timestamp", System.currentTimeMillis());
-            json.put("duration_ms", durationMs);
-            Thread main = Looper.getMainLooper().getThread();
-            json.put("thread", main != null ? main.getName() : "main");
-            // include all thread stack traces
-            JSONArray threads = new JSONArray();
-            Map<Thread, StackTraceElement[]> all = Thread.getAllStackTraces();
-            for (Map.Entry<Thread, StackTraceElement[]> e : all.entrySet()) {
-                JSONObject t = new JSONObject();
-                t.put("name", e.getKey().getName());
-                JSONArray st = new JSONArray();
-                for (StackTraceElement el : e.getValue()) {
-                    st.put(el.toString());
-                }
-                t.put("stack", st);
-                threads.put(t);
+    private String buildThreadDump() {
+        StringBuilder sb = new StringBuilder();
+        java.util.Map<Thread, StackTraceElement[]> all = Thread.getAllStackTraces();
+        for (java.util.Map.Entry<Thread, StackTraceElement[]> e : all.entrySet()) {
+            sb.append("Thread: ").append(e.getKey().getName()).append("\n");
+            for (StackTraceElement el : e.getValue()) {
+                sb.append("  at ").append(el.toString()).append("\n");
             }
-            json.put("threads", threads);
-            JSONObject device = new JSONObject();
-            device.put("model", Build.MODEL);
-            device.put("sdk", Build.VERSION.SDK_INT);
-            device.put("manufacturer", Build.MANUFACTURER);
-            json.put("device", device);
-        } catch (JSONException ignored) {}
-        return json.toString();
+        }
+        return sb.toString();
     }
 }
