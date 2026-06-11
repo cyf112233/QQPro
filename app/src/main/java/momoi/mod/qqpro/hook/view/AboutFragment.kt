@@ -77,18 +77,14 @@ class AboutFragment : MyDialogFragment() {
                 .textColor(0xFF_BBBBBB)
                 .gravity(Gravity.CENTER)
                 .padding(bottom = 12.dp)
-                .clickable {
+                .clickable { view ->
                     // simple tap counter stored in the view's tag
-                    // The clickable lambda runs with the TextView as the receiver
-                    val view = this as android.view.View
                     val cnt = (view.getTag() as? Int) ?: 0
                     val newCnt = cnt + 1
                     view.setTag(newCnt)
                     if (newCnt >= 5) {
                         view.setTag(0)
-                        // Show the test fragment instead of launching an activity
                         val fragment = TestFragment()
-                        // AboutFragment is itself a DialogFragment, use its childFragmentManager
                         fragment.show(childFragmentManager, "testFragment")
                     }
                 }
