@@ -25,6 +25,9 @@ object Settings {
     val hideRepeatedSender = BooleanPref("hideRepeatedSender", true)
     val inlineSendButton = BooleanPref("inlineSendButton", true)
     val inlineChatInput = BooleanPref("inlineChatInput", true)
+    // Show an emoji button in the inline input pill while typing. Tapping it collapses the keyboard
+    // and opens a sysface picker at the keyboard position that inserts faces into the EditText.
+    val inlineEmojiButton = BooleanPref("inlineEmojiButton", false)
     // Screen rounded-corner diameter (in dp). Adds left/right margin of this
     // width to the inline chat EditText so the side buttons aren't clipped by a
     // round watch screen's corners.

@@ -104,6 +104,7 @@ class 设置页 : SettingsActivity() {
             switch("合并连续消息头", "同一人连发多条时，只在第一条显示头像和昵称", Settings.hideRepeatedSender)
             switch("行内发送按钮", "输入页将发送键移到输入框右侧，左侧加关闭键取消发送", Settings.inlineSendButton)
             switch("聊天页直接输入", "在聊天页用输入框替换键盘键，有文字时麦克风键变发送键", Settings.inlineChatInput)
+            switch("行内表情按钮", "聊天页输入有文字时左侧显示表情键，点击收起键盘弹出表情选择器插入表情，点输入框恢复键盘", Settings.inlineEmojiButton)
             slider("屏幕圆角直径", "在输入框左右各留出此宽度的空白，避免圆屏圆角裁切两侧按钮", Settings.screenCornerDiameter, min = 0f, max = 48f)
             switch("返回先回首页", "不在首页时按返回先滑回第一页，已在首页才退出", Settings.backToFirstPage)
             switch("附件浮层", "用输入框左侧 + 键打开附件浮层，移除附件翻页；表情移入附件列表(重进聊天页生效)", Settings.attachmentOverlay)
