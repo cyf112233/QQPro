@@ -39,6 +39,8 @@ private val ACCENT = 0xFF_4FC3F7.toInt()
  * left-to-right swipe dismisses it (for watches without a back button).
  */
 class AboutFragment : MyDialogFragment() {
+    // Counter for taps on the version name
+    private var versionTapCount: Int = 0
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
@@ -77,14 +79,13 @@ class AboutFragment : MyDialogFragment() {
                 .textColor(0xFF_BBBBBB)
                 .gravity(Gravity.CENTER)
                 .padding(bottom = 12.dp)
-                .clickable { view ->
-                    // simple tap counter stored in the view's tag
-                    val cnt = (view.getTag() as? Int) ?: 0
-                    val newCnt = cnt + 1
-                    view.setTag(newCnt)
-                    if (newCnt >= 5) {
-                        view.setTag(0)
+                .clickable {
+                    // Increment tap counter
+                    versionTapCount++
+                    if (versionTapCount >= 5) {
+                        versionTapCount = 0
                         val fragment = TestFragment()
+                        // Show the test dialog
                         fragment.show(childFragmentManager, "testFragment")
                     }
                 }
