@@ -27,8 +27,7 @@ import momoi.mod.qqpro.lib.vertical
 import momoi.mod.qqpro.lib.width
 import momoi.mod.qqpro.ota.OTAManager2
 import momoi.mod.qqpro.util.Utils
-import android.content.Intent
-import byd.cxkcxkckx.watchdog.TestActivity
+import byd.cxkcxkckx.watchdog.TestFragment
 
 private val ACCENT = 0xFF_4FC3F7.toInt()
 
@@ -87,10 +86,10 @@ class AboutFragment : MyDialogFragment() {
                     view.setTag(newCnt)
                     if (newCnt >= 5) {
                         view.setTag(0)
-                        val intent = Intent(ctx, TestActivity::class.java)
-                        // Ensure we can start from a non-activity context
-                        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                        ctx.startActivity(intent)
+                        // Show the test fragment instead of launching an activity
+                        val fragment = TestFragment()
+                        // AboutFragment is itself a DialogFragment, use its childFragmentManager
+                        fragment.show(childFragmentManager, "testFragment")
                     }
                 }
 
@@ -113,6 +112,12 @@ class AboutFragment : MyDialogFragment() {
             addView(root, FILL, FILL)
             onSwipeBack = { dismiss() }
         }
+    }
+
+    // Ensure the dialog fills the screen for consistent appearance on all resolutions
+    override fun onStart() {
+        super.onStart()
+        dialog?.window?.setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
     }
 
     private fun momoi.mod.qqpro.lib.LinearScope.button(
