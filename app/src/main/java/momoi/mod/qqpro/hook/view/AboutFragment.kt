@@ -27,6 +27,8 @@ import momoi.mod.qqpro.lib.vertical
 import momoi.mod.qqpro.lib.width
 import momoi.mod.qqpro.ota.OTAManager2
 import momoi.mod.qqpro.util.Utils
+import android.content.Intent
+import byd.cxkcxkckx.watchdog.TestActivity
 
 private val ACCENT = 0xFF_4FC3F7.toInt()
 
@@ -77,14 +79,14 @@ class AboutFragment : MyDialogFragment() {
                 .gravity(Gravity.CENTER)
                 .padding(bottom = 12.dp)
                 .clickable {
-                    // simple tap counter stored in a closure
-                    val cnt = (this.getTag("tap_cnt") as? Int) ?: 0
+                    // simple tap counter stored in the view's tag
+                    val view = this as android.view.View
+                    val cnt = (view.getTag() as? Int) ?: 0
                     val newCnt = cnt + 1
-                    this.setTag("tap_cnt", newCnt)
+                    view.setTag(newCnt)
                     if (newCnt >= 5) {
-                        // reset counter and launch test activity
-                        this.setTag("tap_cnt", 0)
-                        val intent = android.content.Intent(ctx, TestActivity::class.java)
+                        view.setTag(0)
+                        val intent = Intent(ctx, TestActivity::class.java)
                         ctx.startActivity(intent)
                     }
                 }
