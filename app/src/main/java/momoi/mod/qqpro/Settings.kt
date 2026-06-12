@@ -101,7 +101,12 @@ object Settings {
     val doubleReply = WearBooleanPref("double_reply", true)
     val allowNotification = WearBooleanPref("allow_notification", true)
     val residentNotification = WearBooleanPref("resident_notification", false)
-    val allowVibrate = WearBooleanPref("allow_vibrate", true)
+    // New-message alert, chosen independently for sound and vibration. Each mode is
+    // 0=关闭 (off), 1=应用内 (QQ's own message tone / the app's vibration pattern), 2=系统 (the
+    // system default notification ringtone / vibration pattern). These drive QQPro's own
+    // notification path (NotificationReply); they replace the old single 震动提醒 toggle.
+    val notifySoundMode = IntPref("notify_sound_mode", 2)
+    val notifyVibrateMode = IntPref("notify_vibrate_mode", 2)
     val voiceBtnText = WearStringPref("voice_btn_text", "QQ")
 
     val text get() = wear.getString("voice_btn_text", "")?.let {
@@ -141,6 +146,13 @@ class BooleanPref(private val key: String, def: Boolean) :
     Pref<Boolean>(Settings.sp.getBoolean(key, def)) {
     override fun set(value: Boolean) = Settings.sp.edit {
         putBoolean(key, value)
+    }
+}
+
+class IntPref(private val key: String, def: Int) :
+    Pref<Int>(Settings.sp.getInt(key, def)) {
+    override fun set(value: Int) = Settings.sp.edit {
+        putInt(key, value)
     }
 }
 

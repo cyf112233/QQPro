@@ -2,13 +2,18 @@ package momoi.mod.qqpro.hook
 
 import android.annotation.SuppressLint
 import android.app.Activity
+import android.app.Dialog
 import android.content.Intent
+import android.graphics.Color
 import android.graphics.drawable.ClipDrawable
+import android.graphics.drawable.ColorDrawable
 import android.graphics.drawable.GradientDrawable
 import android.graphics.drawable.LayerDrawable
 import android.os.Bundle
 import android.view.Gravity
 import android.view.View
+import android.view.ViewGroup
+import android.view.Window
 import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.ScrollView
@@ -34,6 +39,7 @@ import momoi.mod.qqpro.lib.onProgressChanged
 import momoi.mod.qqpro.lib.padding
 import momoi.mod.qqpro.lib.SwipeBackLayout
 import momoi.mod.qqpro.lib.progressMax
+import momoi.mod.qqpro.lib.size
 import momoi.mod.qqpro.lib.text
 import momoi.mod.qqpro.lib.textColor
 import momoi.mod.qqpro.lib.textSize
@@ -88,7 +94,6 @@ class 设置页 : SettingsActivity() {
             switch("双击回复", "双击消息进入回复", Settings.doubleReply)
             switch("允许通知", "允许显示消息通知", Settings.allowNotification)
             switch("常驻通知", "保留常驻通知（更耗电）", Settings.residentNotification)
-            switch("震动提醒", "新消息时震动提醒", Settings.allowVibrate)
             textInput("语音键文字", "聊天页语音键上显示的文字", Settings.voiceBtnText)
 
             section("QQ Pro 设置", "增强版 by java30433")
@@ -126,6 +131,10 @@ class 设置页 : SettingsActivity() {
             textInput("对方气泡颜色", "16进制如 #2B6CF6，留空为默认", Settings.bubbleColorOther)
             chatBackgroundPicker()
             slider("背景变暗程度", "调暗背景图以便看清文字，重进聊天页生效", Settings.chatBgDarken, min = 0f, max = 0.9f)
+            selector("提醒声音", "新消息提示音：关闭 / 应用内音效 / 系统通知音", Settings.notifySoundMode,
+                listOf("关闭", "应用内", "系统"))
+            selector("提醒震动", "新消息震动：关闭 / 应用内模式 / 系统模式", Settings.notifyVibrateMode,
+                listOf("关闭", "应用内", "系统"))
             switch("自动检查更新", "启动时检查 QQ Max 新版本，可在关于页手动检查", Settings.autoUpdateCheck)
 
             add<View>()
@@ -159,6 +168,112 @@ class 设置页 : SettingsActivity() {
             sw.onCheckedChange { pref.value = it }
             add(sw)
         }
+    }
+
+    /**
+     * Dropdown-style row: shows the current option (with a ▾ affordance) on the right; tapping opens
+     * a hand-built dark option picker. Used for multi-state settings (e.g. 关闭 / 应用内 / 系统).
+     * Built entirely with the view DSL — the app's bundled appcompat is far too old for a Material
+     * dialog to look right.
+     */
+    private fun GroupScopeFix.selector(
+        title: String,
+        desc: String,
+        pref: Pref<Int>,
+        options: List<String>
+    ) = card { card ->
+        lateinit var valueLabel: TextView
+        card.content {
+            titleColumn(title, desc).weight(1f)
+            valueLabel = add<TextView>()
+                .text(selectorLabel(options, pref.value))
+                .textSize(14f)
+                .textColor(ACCENT)
+                .gravity(Gravity.CENTER_VERTICAL)
+        }
+        card.onClick {
+            showOptionPicker(title, options, pref.value) { which ->
+                pref.value = which
+                valueLabel.text = selectorLabel(options, which)
+            }
+        }
+    }
+
+    private fun selectorLabel(options: List<String>, index: Int) =
+        options.getOrElse(index) { options.first() } + "  ▾"
+
+    /** A hand-drawn dark single-choice popup styled like the rest of the settings cards. */
+    private fun showOptionPicker(
+        title: String,
+        options: List<String>,
+        selected: Int,
+        onPick: (Int) -> Unit,
+    ) {
+        val dialog = Dialog(this)
+        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE)
+
+        val panel = LinearLayout(this)
+            .vertical()
+            .padding(top = 16.dp, bottom = 8.dp)
+        panel.background(GradientDrawable().apply {
+            setColor(0xFF_1E1E1E.toInt())
+            cornerRadius = 22.dp.toFloat()
+        })
+
+        panel.content {
+            add<TextView>()
+                .text(title)
+                .textSize(15f)
+                .textColor(0xFF_FFFFFF)
+                .gravity(Gravity.CENTER)
+                .padding(left = 16.dp, right = 16.dp, bottom = 12.dp)
+
+            options.forEachIndexed { index, label ->
+                val isSel = index == selected
+                val row = add<LinearLayout>()
+                    .width(FILL)
+                    .padding(left = 16.dp, top = 13.dp, right = 16.dp, bottom = 13.dp)
+                row.gravity(Gravity.CENTER_VERTICAL)
+                row.margin(left = 8.dp, right = 8.dp, top = 2.dp, bottom = 2.dp)
+                if (isSel) {
+                    row.background(GradientDrawable().apply {
+                        setColor(0x33_4FC3F7)
+                        cornerRadius = 14.dp.toFloat()
+                    })
+                }
+                row.content {
+                    // Radio indicator: filled accent disc when selected, hollow grey ring otherwise.
+                    add<View>()
+                        .size(16.dp)
+                        .background(GradientDrawable().apply {
+                            shape = GradientDrawable.OVAL
+                            if (isSel) {
+                                setColor(ACCENT)
+                            } else {
+                                setColor(0x00_000000)
+                                setStroke(2.dp, 0xFF_5A5A5A.toInt())
+                            }
+                        })
+                    add<TextView>()
+                        .text(label)
+                        .textSize(14f)
+                        .textColor(if (isSel) ACCENT else 0xFF_FFFFFF.toInt())
+                        .margin(left = 14.dp)
+                }
+                row.onClick {
+                    onPick(index)
+                    dialog.dismiss()
+                }
+            }
+        }
+
+        dialog.setContentView(panel)
+        dialog.window?.apply {
+            setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
+            val w = (resources.displayMetrics.widthPixels * 0.82f).toInt()
+            setLayout(w, ViewGroup.LayoutParams.WRAP_CONTENT)
+        }
+        dialog.show()
     }
 
     private fun updateBgStatus() {

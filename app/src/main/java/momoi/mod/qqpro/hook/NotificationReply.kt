@@ -11,7 +11,6 @@ import android.os.Build
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.app.RemoteInput
-import com.tencent.commonsdk.util.notification.QQNotificationManager
 import com.tencent.mobileqq.qroute.QRoute
 import com.tencent.qqnt.global.settings.api.IGlobalSettingsApi
 import com.tencent.qqnt.kernel.api.IAvatarService
@@ -105,6 +104,7 @@ private fun postChatNotification(facade: NotificationFacade, app: AppRuntime, ms
     val ctx = Utils.application
     ensureReceiverRegistered(ctx)
     ensureReadListenerRegistered(app)
+    NotificationAlert.ensureChannel(ctx)
 
     val peerUid = msg.peerUid ?: ""
     val peerUin = msg.peerUin
@@ -173,7 +173,7 @@ private fun postChatNotification(facade: NotificationFacade, app: AppRuntime, ms
     // Builds a fresh notification; with no [bigPicture] it uses BigTextStyle so longer messages
     // expand to the full text instead of being clipped to one line.
     fun build(bigPicture: Bitmap?): android.app.Notification {
-        val b = NotificationCompat.Builder(ctx, QQNotificationManager.CHANNEL_ID_SHOW_BADGE)
+        val b = NotificationCompat.Builder(ctx, NotificationAlert.CHANNEL_ID)
             .setSmallIcon(smallIcon)
             .setContentTitle(name)
             .setContentText(content)
@@ -198,6 +198,8 @@ private fun postChatNotification(facade: NotificationFacade, app: AppRuntime, ms
 
     val nm = NotificationManagerCompat.from(ctx)
     nm.notify(notifyId, build(null))
+    // Fire the alert once per posting (vibration/sound), not on the later image re-post below.
+    NotificationAlert.fire(ctx)
     Utils.log("NotificationReply: posted id=$notifyId uin=$peerUin type=$chatType preview=$showPreview")
 
     // For an image message, load the picture in the background and re-post with BigPictureStyle.
