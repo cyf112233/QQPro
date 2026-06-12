@@ -140,6 +140,7 @@ class WatchdogActivityHook : com.tencent.qqnt.watch.mainframe.MainActivity() {
                         .setContent { helpTab })
                 
                 root.addView(tabHost, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.MATCH_PARENT, 1f))
+                var reportDialog: android.app.AlertDialog? = null
                 
                 // Button container
                 val btnContainer = LinearLayout(this).apply {
@@ -200,11 +201,12 @@ class WatchdogActivityHook : com.tencent.qqnt.watch.mainframe.MainActivity() {
                     setPadding(6.dp, 6.dp, 6.dp, 6.dp)
                     textSize = 12f
                     setOnClickListener {
-                        dialog.dismiss()
+                        reportDialog?.dismiss()
                     }
                 }, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f).apply {
                     marginStart = 4.dp
                 })
+                reportDialog = dialog
                 
                 // Set responsive dialog dimensions
                 dialog.window?.apply {
