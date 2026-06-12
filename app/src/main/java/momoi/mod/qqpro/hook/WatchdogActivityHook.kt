@@ -9,6 +9,8 @@ import androidx.appcompat.app.AlertDialog
 import momoi.mod.qqpro.util.Utils
 import byd.cxkcxkckx.watchdog.CrashHandler
 import byd.cxkcxkckx.watchdog.HangWatcher
+import byd.cxkcxkckx.watchdog.CrashApplication
+import momoi.mod.qqpro.lib.Mixin
 
 /**
  * Hook into com.tencent.qqnt.watch.mainframe.MainActivity to:
@@ -19,8 +21,6 @@ import byd.cxkcxkckx.watchdog.HangWatcher
 class WatchdogActivityHook : com.tencent.qqnt.watch.mainframe.MainActivity() {
     companion object {
         private const val TAG = "WatchdogHook"
-        private const val PREF_NAME = "watchdog_prefs"
-        private const val KEY_CRASH_REPORT = "crash_report"
         private var watchdogStarted = false
     }
 
@@ -36,8 +36,8 @@ class WatchdogActivityHook : com.tencent.qqnt.watch.mainframe.MainActivity() {
         }
         
         // Check for saved crash/hang report from previous session
-        val sp = getSharedPreferences(PREF_NAME, MODE_PRIVATE)
-        val savedReport = sp.getString(KEY_CRASH_REPORT, null)
+        val sp = getSharedPreferences(CrashApplication.PREF_NAME, MODE_PRIVATE)
+        val savedReport = sp.getString(CrashApplication.KEY_CRASH_REPORT, null)
         
         if (savedReport != null) {
             Utils.log("$TAG: Found saved report from previous crash/hang, showing dialog")
@@ -66,7 +66,7 @@ class WatchdogActivityHook : com.tencent.qqnt.watch.mainframe.MainActivity() {
             }
             
             // Clear the report after showing
-            sp.edit().remove(KEY_CRASH_REPORT).apply()
+            sp.edit().remove(CrashApplication.KEY_CRASH_REPORT).apply()
         }
     }
 }
