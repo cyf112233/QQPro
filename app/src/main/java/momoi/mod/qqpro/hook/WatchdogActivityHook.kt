@@ -184,17 +184,6 @@ class WatchdogActivityHook : com.tencent.qqnt.watch.mainframe.MainActivity() {
                     marginEnd = 4.dp
                 })
                 
-                // Exit button
-                btnContainer.addView(Button(this).apply {
-                    text = "退出"
-                    setTextColor(0xFF_FFFFFF.toInt())
-                    setBackgroundColor(0xFF_F44336.toInt())
-                    setPadding(6.dp, 6.dp, 6.dp, 6.dp)
-                    textSize = 12f
-                }, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f).apply {
-                    marginStart = 4.dp
-                })
-                
                 root.addView(btnContainer, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT))
                 
                 // Create and show dialog
@@ -203,10 +192,19 @@ class WatchdogActivityHook : com.tencent.qqnt.watch.mainframe.MainActivity() {
                         .setCancelable(false)
                         .create()
                 
-                // Set exit button listener
-                (btnContainer.getChildAt(2) as Button).setOnClickListener {
-                    dialog.dismiss()
-                }
+                // Exit button (add after dialog creation so it can reference the dialog)
+                btnContainer.addView(Button(this).apply {
+                    text = "退出"
+                    setTextColor(0xFF_FFFFFF.toInt())
+                    setBackgroundColor(0xFF_F44336.toInt())
+                    setPadding(6.dp, 6.dp, 6.dp, 6.dp)
+                    textSize = 12f
+                    setOnClickListener {
+                        dialog.dismiss()
+                    }
+                }, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f).apply {
+                    marginStart = 4.dp
+                })
                 
                 // Set responsive dialog dimensions
                 dialog.window?.apply {
