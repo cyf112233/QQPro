@@ -1,10 +1,13 @@
 package byd.cxkcxkckx.watchdog
 
+import android.app.Dialog
+import android.graphics.drawable.ColorDrawable
 import android.os.Bundle
 import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.view.Window
 import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.ScrollView
@@ -16,10 +19,17 @@ import androidx.fragment.app.DialogFragment
  * Provides buttons to trigger various crash and hang scenarios for testing.
  */
 class TestFragment : DialogFragment() {
+    override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
+        return super.onCreateDialog(savedInstanceState).apply {
+            requestWindowFeature(Window.FEATURE_NO_TITLE)
+        }
+    }
+
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         val ctx = requireContext()
         val root = ScrollView(ctx).apply {
             isFillViewport = false
+            setBackgroundColor(0xF0_1F1F1F.toInt())
         }
         
         val content = LinearLayout(ctx).apply {
@@ -147,6 +157,9 @@ class TestFragment : DialogFragment() {
     
     override fun onStart() {
         super.onStart()
-        dialog?.window?.setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+        dialog?.window?.apply {
+            setBackgroundDrawable(ColorDrawable(0xF0_1F1F1F.toInt()))
+            setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+        }
     }
 }
