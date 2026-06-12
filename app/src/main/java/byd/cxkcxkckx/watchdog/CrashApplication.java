@@ -18,12 +18,12 @@ import androidx.appcompat.app.AlertDialog;
  * 1. CrashHandler – catches uncaught exceptions and stores the stack trace.
  * 2. HangWatcher – monitors the main thread for stalls (>5 s) and stores hang reports.
  * Both save reports to SharedPreferences synchronously.
- * Reports are shown on the SECOND launch after a crash/hang (not immediately).
+ * Reports are shown on the FIRST launch after a crash/hang.
  */
 public class CrashApplication extends Application {
     public static final String PREF_NAME = "watchdog_prefs";
     public static final String KEY_CRASH_REPORT = "crash_report";
-    public static final String KEY_REPORT_SHOWN = "report_shown";
+    private static final String TAG = "WatchdogApp";
 
     @Override
     public void onCreate() {
@@ -34,13 +34,15 @@ public class CrashApplication extends Application {
         new HangWatcher(this).start();
         
         // Check for a saved crash/hang report from the previous run
-        SharedPreferences sp = getSharedPreferences(PREF_NAME, MODE_PRIVATE);
+        SharedPreferences sp = getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE);
         String savedReport = sp.getString(KEY_CRASH_REPORT, null);
-        boolean reportShown = sp.getBoolean(KEY_REPORT_SHOWN, false);
         
-        // Only show the report on the SECOND launch (when reportShown is already true)
-        if (savedReport != null && reportShown) {
+        Log.d(TAG, "onCreate: savedReport=" + (savedReport != null ? "exists" : "null"));
+        
+        // Show the report immediately on any launch if it exists
+        if (savedReport != null) {
             final String report = savedReport;
+            Log.d(TAG, "Found saved report, showing dialog");
             new Handler(Looper.getMainLooper()).post(() -> {
                 new AlertDialog.Builder(this)
                         .setTitle("上次使用时崩溃了")
@@ -63,20 +65,18 @@ public class CrashApplication extends Application {
                         .show();
             });
             // Clear report after showing
-            sp.edit().remove(KEY_CRASH_REPORT).remove(KEY_REPORT_SHOWN).commit();
-        } else if (savedReport != null && !reportShown) {
-            // Mark that we've seen the report once (for next launch)
-            sp.edit().putBoolean(KEY_REPORT_SHOWN, true).commit();
+            sp.edit().remove(KEY_CRASH_REPORT).apply();
         }
     }
 }
 
 /**
- * Handler for uncaught exceptions. Persists the stack trace for viewing on the next-next launch.
+ * Handler for uncaught exceptions. Persists the stack trace for viewing on the next launch.
  */
 class CrashHandler implements Thread.UncaughtExceptionHandler {
     private final Context context;
     private final Thread.UncaughtExceptionHandler defaultHandler;
+    private static final String TAG = "CrashHandler";
 
     CrashHandler(Context ctx) {
         this.context = ctx.getApplicationContext();
@@ -86,15 +86,18 @@ class CrashHandler implements Thread.UncaughtExceptionHandler {
     @Override
     public void uncaughtException(Thread t, Throwable e) {
         final String stackTrace = Log.getStackTraceString(e);
+        Log.e(TAG, "Uncaught exception: " + e.getClass().getSimpleName());
         
-        // Store the report synchronously (will be shown on second launch)
+        // Store the report synchronously (will be shown on next launch)
         try {
             SharedPreferences sp = context.getSharedPreferences(CrashApplication.PREF_NAME, Context.MODE_PRIVATE);
+            Log.d(TAG, "Saving crash report to SharedPreferences");
             sp.edit()
                     .putString(CrashApplication.KEY_CRASH_REPORT, stackTrace)
-                    .putBoolean(CrashApplication.KEY_REPORT_SHOWN, false)
                     .commit();
-        } catch (Exception ignored) {
+            Log.d(TAG, "Crash report saved successfully");
+        } catch (Exception ex) {
+            Log.e(TAG, "Failed to save crash report", ex);
         }
         
         // Terminate without showing a dialog
