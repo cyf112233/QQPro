@@ -13,7 +13,9 @@ import androidx.core.content.ContextCompat
 import androidx.core.view.forEach
 import com.tencent.qqnt.kernel.nativeinterface.Contact
 import com.tencent.qqnt.kernel.nativeinterface.IOperateCallback
+import com.tencent.qqnt.kernel.nativeinterface.MemberRole
 import com.tencent.qqnt.kernel.nativeinterface.MsgRecord
+import com.tencent.qqnt.msg.KernelServiceUtil
 import com.tencent.watch.aio_impl.data.WatchAIOMsgItem
 import com.tencent.watch.aio_impl.ui.cell.base.WatchAIOGroupWidgetItemCell
 import com.tencent.watch.aio_impl.ui.menu.AIOLongClickMenuFragment
@@ -27,9 +29,12 @@ import momoi.mod.qqpro.hook.shareMessage
 import momoi.mod.qqpro.asGroup
 import momoi.mod.qqpro.drawable.editIconDrawable
 import momoi.mod.qqpro.forEachAll
+import momoi.mod.qqpro.hook.action.CurrentContact
+import momoi.mod.qqpro.hook.action.CurrentGroupMembers
 import momoi.mod.qqpro.hook.action.CurrentMsgList
 import momoi.mod.qqpro.hook.action.MessageEdit
 import momoi.mod.qqpro.hook.action.SelfContact
+import momoi.mod.qqpro.hook.action.isGroup
 import momoi.mod.qqpro.lib.FILL
 import momoi.mod.qqpro.lib.LinearScope
 import momoi.mod.qqpro.lib.background
@@ -202,6 +207,24 @@ private fun process(group: ViewGroup, msg: MsgRecord?, msgItem: WatchAIOMsgItem?
             MessageEdit.begin(editId, fwdText)
             dismiss()
         }, 1)
+    }
+    // 撤回(群管理员/群主)：撤回其它成员的消息。自己的消息由原生菜单的撤回处理，这里只对他人消息生效。
+    // 注意"删除"是本地删除(非撤回)，无法替代此功能。
+    val recallId = msg?.msgId
+    if (recallId != null && recallId != 0L && !isSelf && CurrentContact.isGroup) {
+        CurrentGroupMembers.get(SelfContact.peerUid) { self ->
+            if (self.role == MemberRole.OWNER || self.role == MemberRole.ADMIN) {
+                runOnUi {
+                    val recallIcon = ContextCompat.getDrawable(linear.context, 0x7e080b3d) // R.drawable.qui_recall
+                    linear.addView(cloneMenuItem(linear, "撤回", recallIcon) {
+                        runCatching {
+                            KernelServiceUtil.c()?.recallMsg(CurrentContact, recallId, null)
+                        }.onFailure { Utils.log("menu recall failed: $it") }
+                        dismiss()
+                    }, 1)
+                }
+            }
+        }
     }
     if (Utils.isRoundScreen) {
         LinearScope(linear).add<View>()

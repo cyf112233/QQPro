@@ -33,11 +33,15 @@ class WatchAIOPageReset : WatchAIOFragment() {
         }
         if (Settings.attachmentOverlay.value) fixIndicatorIcons(view)
         if (Settings.enableTitlebar.value) {
-            RichTitlebar.build(this, view as ViewGroup)
+            // The chat content (bubbles + input pill) is inset from the screen edge by a small base
+            // padding (~4dp) on top of the corner margin. Add it so the titlebar lines up with the pill.
+            RichTitlebar.build(this, view as ViewGroup, 6.dp)
             // Push the chat content below the (possibly taller) titlebar.
             val h = Settings.titlebarHeight.value.toInt().dp
             f?.let { it.setPadding(it.paddingLeft, h, it.paddingRight, it.paddingBottom) }
         }
+        // Optional unread badge floating over the chat's top-left corner (independent of titlebar).
+        if (Settings.floatUnreadInChat.value) RichTitlebar.buildFloating(this, view as ViewGroup)
     }
 
     /**

@@ -21,30 +21,36 @@ object Settings {
     // ===== QQ Max 设置 (by AILIFE) =====
     val showGroupAvatar = BooleanPref("showGroupAvatar", true)
     // Group chat avatar size, as a multiple of the nickname text size. Default 3x.
-    val avatarSizeScale = FloatPref("avatarSizeScale", 3f)
+    val avatarSizeScale = FloatPref("avatarSizeScale", 2.5f)
     val hideRepeatedSender = BooleanPref("hideRepeatedSender", true)
     val inlineSendButton = BooleanPref("inlineSendButton", true)
     val inlineChatInput = BooleanPref("inlineChatInput", true)
+    // Show an emoji button in the inline input pill while typing. Tapping it collapses the keyboard
+    // and opens a sysface picker at the keyboard position that inserts faces into the EditText.
+    val inlineEmojiButton = BooleanPref("inlineEmojiButton", false)
     // Screen rounded-corner diameter (in dp). Adds left/right margin of this
     // width to the inline chat EditText so the side buttons aren't clipped by a
     // round watch screen's corners.
-    val screenCornerDiameter = FloatPref("screenCornerDiameter", 22f)
+    val screenCornerDiameter = FloatPref("screenCornerDiameter", 15f)
     val backToFirstPage = BooleanPref("backToFirstPage", true)
     // Replace the input bar's emoji button with a "+" button that opens the attachment
     // list as an overlay over the chat (like the long-press menu). Removes the attachment
     // ViewPager page (友: 聊天+设置 两页; 非好友: 仅聊天), and moves 表情 into the overlay list.
-    val attachmentOverlay = BooleanPref("attachmentOverlay", false)
+    val attachmentOverlay = BooleanPref("attachmentOverlay", true)
     // Rich chat titlebar: replaces the top page-indicator strip with a bar holding a back
     // button, the indicator dots, other-chats unread count, group member count and the
     // group/contact name. titlebarHeight (dp) defaults to the current strip height (16).
-    val enableTitlebar = BooleanPref("enableTitlebar", false)
+    val enableTitlebar = BooleanPref("enableTitlebar", true)
     // Show the other-chats unread count badge in the chat titlebar. When off, the
     // titlebar shows only the name + member count (no red badge).
     val titlebarShowUnread = BooleanPref("titlebarShowUnread", true)
+    // Show the other-chats unread badge floating over the chat's top-left corner instead of in
+    // the titlebar header. Works even when the titlebar is off; when on, the header badge is hidden.
+    val floatUnreadInChat = BooleanPref("floatUnreadInChat", false)
     val titlebarHeight = FloatPref("titlebarHeight", 16f)
     // Move the home/main page's page-indicator dots to the bottom and scale their size by
     // titlebarHeight (relative to the default 16dp).
-    val bottomMainNav = BooleanPref("bottomMainNav", false)
+    val bottomMainNav = BooleanPref("bottomMainNav", true)
     // Use the in-app camera for 拍照. When off, launch the system camera app (third-party)
     // via an intent for photos. Video recording always uses the system app (the in-app
     // camera can't record video).

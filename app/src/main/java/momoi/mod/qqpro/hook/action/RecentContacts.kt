@@ -69,6 +69,9 @@ object RecentContacts {
     class Data(
         val raw: RecentContactInfo,
         val unreadCntCached: Int,
+        // 免打扰/屏蔽: true when the chat-list greys the unread badge, i.e. isMsgDisturb (item.p)
+        // OR shieldFlag (item.q) not in {0,1} — same condition as WatchRecentItemBuilder.l().
+        val disturb: Boolean = false,
     ) {
         val atType get() = raw.atType
     }
@@ -81,10 +84,14 @@ object RecentContacts {
         }
 
         override fun t(item: RecentContactChatItem, holder: WatchRecentContactHolder) {
-            Utils.log("load recent contact: ${item.a.peerName}, unreadCnt: ${item.a.unreadCnt}, chatCnt: ${item.a.unreadChatCnt}, peerUid: ${item.a.peerUid}")
+            // Grey badge (muted) = isMsgDisturb (item.p) OR shieldFlag (item.q) not in {0,1}.
+            val sf = item.q.toInt()
+            val muted = item.p || (sf != 0 && sf != 1)
+            Utils.log("load recent contact: ${item.a.peerName}, unreadCnt: ${item.a.unreadCnt}, peerUid: ${item.a.peerUid}, muted=$muted (disturb=${item.p}, shieldFlag=${item.q})")
             map[item.a.peerUid] = Data(
                 item.a,
-                item.a.unreadCnt.toInt()
+                item.a.unreadCnt.toInt(),
+                muted
             )
             // Replace unrendered emoji garbage in the preview with a "[表情]" placeholder before binding.
             sanitizeItem(item)

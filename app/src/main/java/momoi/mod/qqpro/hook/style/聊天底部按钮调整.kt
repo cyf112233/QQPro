@@ -28,6 +28,7 @@ import momoi.mod.qqpro.drawable.plusIconDrawable
 import momoi.mod.qqpro.drawable.roundCornerDrawable
 import momoi.mod.qqpro.drawable.sendIconDrawable
 import momoi.mod.qqpro.hook.AttachmentOverlay
+import momoi.mod.qqpro.hook.InlineEmojiPanel
 import momoi.mod.qqpro.hook.action.CurrentContact
 import momoi.mod.qqpro.lib.FILL
 import momoi.mod.qqpro.lib.ImeEditText
@@ -97,6 +98,7 @@ class 聊天底部按钮调整() : `InputBarController$inputContent$2`() {
                                 visibility = View.GONE
                             }
                         lateinit var emojiBtn: ImageView
+                        lateinit var emojiToggle: ImageView
                         lateinit var editText: ImeEditText
                         pill.content {
                             emojiBtn = add<ImageView>().height(FILL).adjustViewBounds()
@@ -109,6 +111,14 @@ class 聊天底部按钮调整() : `InputBarController$inputContent$2`() {
                                 emojiBtn.bitmapDecodeAssets("pro/ic_emoji.png")
                                 emojiBtn.clickable { hideIme(emojiBtn); emoji.callOnClick() }
                             }
+                            // Emoji-picker toggle, shown only while typing (inlineEmojiButton). It sits
+                            // in the same left slot as emojiBtn (which hides once there is text), so it
+                            // appears as an emoji key regardless of the attachment-overlay "+" setting.
+                            emojiToggle = add<ImageView>().height(FILL).adjustViewBounds()
+                                .scaleType(ImageView.ScaleType.FIT_CENTER).padding(8.dp)
+                                .bitmapDecodeAssets("pro/ic_emoji.png")
+                            emojiToggle.visibility = View.GONE
+                            emojiToggle.clickable { InlineEmojiPanel.toggle(editText) }
                             editText = add<ImeEditText>().height(FILL).weight(1f)
                                 .background(null)
                                 .paddingHorizontal(4.dp)
@@ -127,12 +137,17 @@ class 聊天底部按钮调整() : `InputBarController$inputContent$2`() {
                         }
                         send.clickable { sendInline(editText) }
                         editText.doAfterTextChanged {
-                            val hasText = !it.isNullOrBlank()
+                            // Use isNullOrEmpty (not isNullOrBlank): a space is real content the
+                            // user typed (the hint already disappeared), so it must flip to send.
+                            val hasText = !it.isNullOrEmpty()
+                            val emojiMode = hasText && Settings.inlineEmojiButton.value
                             // Hide the emoji / "+" button when there is text, to make room for
-                            // the send button.
+                            // the send button; show the emoji-picker toggle in its place if enabled.
                             emojiBtn.visibility = if (hasText) View.GONE else View.VISIBLE
+                            emojiToggle.visibility = if (emojiMode) View.VISIBLE else View.GONE
                             voice.visibility = if (hasText) View.GONE else View.VISIBLE
                             send.visibility = if (hasText) View.VISIBLE else View.GONE
+                            if (!emojiMode) InlineEmojiPanel.dismiss()
                         }
                         add(pill.marginHorizontal(sideSpaceDp.dp))
                     } else {
@@ -171,7 +186,8 @@ class 聊天底部按钮调整() : `InputBarController$inputContent$2`() {
 
     private fun sendInline(editText: EditText) {
         val text = editText.text?.toString().orEmpty()
-        if (text.isBlank()) return
+        // Don't drop whitespace — a space is valid content the user chose to send.
+        if (text.isEmpty()) return
         runCatching {
             val elements = ImeTextUtil.a.b(text)
             val contact = Contact(
