@@ -1,6 +1,5 @@
 package byd.cxkcxkckx.watchdog
 
-import android.app.AlertDialog
 import android.os.Bundle
 import android.view.Gravity
 import android.view.LayoutInflater
@@ -13,7 +12,7 @@ import android.widget.TextView
 import androidx.fragment.app.DialogFragment
 
 /**
- * Comprehensive test dialog for the watchdog system.
+ * Comprehensive test dialog for the watchdog system with modern design.
  * Provides buttons to trigger various crash and hang scenarios for testing.
  */
 class TestFragment : DialogFragment() {
@@ -25,126 +24,125 @@ class TestFragment : DialogFragment() {
         
         val content = LinearLayout(ctx).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(20, 20, 20, 20)
+            setPadding(16, 16, 16, 16)
+            setBackgroundColor(0xF0_1F1F1F.toInt())
         }
         
         // Title
         content.addView(TextView(ctx).apply {
-            text = "Watchdog测试"
-            textSize = 18f
+            text = "Watchdog 测试"
+            textSize = 20f
+            setTextColor(0xFF_FFFFFF.toInt())
             gravity = Gravity.CENTER
-            setPadding(0, 0, 0, 16)
+            setPadding(0, 0, 0, 20)
         })
         
-        // Crash Tests
-        content.addView(TextView(ctx).apply {
-            text = "崩溃测试"
-            textSize = 14f
-            setTextColor(0xFF_BBBBBB.toInt())
-            setPadding(0, 8, 0, 8)
-        })
+        // Helper function to create section headers
+        fun addSection(title: String) {
+            content.addView(TextView(ctx).apply {
+                text = title
+                textSize = 14f
+                setTextColor(0xFF_4FC3F7.toInt())
+                setPadding(0, 16, 0, 8)
+            })
+        }
         
-        content.addView(createButton("NullPointerException") {
+        // Helper function to create test buttons
+        fun addTestButton(label: String, action: () -> Unit) {
+            content.addView(Button(ctx).apply {
+                text = label
+                setTextColor(0xFF_FFFFFF.toInt())
+                setBackgroundColor(0xFF_2196F3.toInt())
+                setPadding(12, 12, 12, 12)
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+                ).apply { bottomMargin = 8 }
+                setOnClickListener {
+                    try {
+                        action()
+                    } catch (e: Exception) {
+                        throw e
+                    }
+                }
+            })
+        }
+        
+        // Crash Tests Section
+        addSection("💥 崩溃测试")
+        
+        addTestButton("NullPointerException") {
             val x: String? = null
             x!!.length
-        })
+        }
         
-        content.addView(createButton("ArrayIndexOutOfBoundsException") {
+        addTestButton("ArrayIndexOutOfBoundsException") {
             val arr = IntArray(5)
             arr[100].toString()
-        })
+        }
         
-        content.addView(createButton("ArithmeticException") {
+        addTestButton("ArithmeticException") {
             (1 / 0).toString()
-        })
+        }
         
-        content.addView(createButton("ClassCastException") {
+        addTestButton("ClassCastException") {
             val obj: Any = "string"
             (obj as Int).toString()
-        })
+        }
         
-        content.addView(createButton("RuntimeException") {
+        addTestButton("RuntimeException") {
             throw RuntimeException("Test RuntimeException")
-        })
+        }
         
-        // Hang Tests
-        content.addView(TextView(ctx).apply {
-            text = "卡死测试"
-            textSize = 14f
-            setTextColor(0xFF_BBBBBB.toInt())
-            setPadding(0, 16, 0, 8)
-        })
+        // Hang Tests Section
+        addSection("⏸️ 卡死测试")
         
-        content.addView(createButton("卡死 5 秒") {
+        addTestButton("卡死 5 秒") {
             val end = System.currentTimeMillis() + 5000
             while (System.currentTimeMillis() < end) {
                 // busy wait
             }
-        })
+        }
         
-        content.addView(createButton("卡死 10 秒") {
+        addTestButton("卡死 10 秒") {
             val end = System.currentTimeMillis() + 10000
             while (System.currentTimeMillis() < end) {
                 // busy wait
             }
-        })
+        }
         
-        content.addView(createButton("无限循环") {
+        addTestButton("无限循环") {
             @Suppress("ControlFlowWithEmptyBody")
             while (true) {
                 // infinite loop
             }
-        })
+        }
         
-        // Thread Tests
-        content.addView(TextView(ctx).apply {
-            text = "线程相关"
-            textSize = 14f
-            setTextColor(0xFF_BBBBBB.toInt())
-            setPadding(0, 16, 0, 8)
-        })
+        // Thread Tests Section
+        addSection("🔗 线程测试")
         
-        content.addView(createButton("后台线程崩溃") {
+        addTestButton("后台线程崩溃") {
             Thread {
                 throw RuntimeException("Background thread crash")
             }.start()
-        })
+        }
         
-        content.addView(createButton("延迟 2 秒后崩溃") {
+        addTestButton("延迟 2 秒后崩溃") {
             Thread {
                 Thread.sleep(2000)
                 throw RuntimeException("Delayed crash")
             }.start()
-        })
+        }
         
-        // Action Tests
-        content.addView(TextView(ctx).apply {
-            text = "操作"
-            textSize = 14f
-            setTextColor(0xFF_BBBBBB.toInt())
-            setPadding(0, 16, 0, 8)
-        })
+        // Action Section
+        addSection("✓ 操作")
         
-        content.addView(createButton("关闭测试界面") {
+        addTestButton("关闭测试界面") {
             dismiss()
-        })
+        }
         
         root.addView(content, ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
         return root
-    }
-    
-    private fun createButton(label: String, action: () -> Unit): Button {
-        return Button(requireContext()).apply {
-            text = label
-            setOnClickListener {
-                try {
-                    action()
-                } catch (e: Exception) {
-                    // Let uncaught exception handler catch it
-                    throw e
-                }
-            }
-        }
     }
     
     override fun onStart() {
