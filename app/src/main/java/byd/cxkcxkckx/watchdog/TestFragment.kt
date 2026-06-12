@@ -40,7 +40,7 @@ class TestFragment : DialogFragment() {
         
         // Title
         content.addView(TextView(ctx).apply {
-            text = "Watchdog 测试"
+            text = "崩溃测试"
             textSize = 20f
             setTextColor(0xFF_FFFFFF.toInt())
             gravity = Gravity.CENTER
