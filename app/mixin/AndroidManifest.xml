@@ -25,5 +25,18 @@
                 <data android:mimeType="video/*" />
             </intent-filter>
         </activity>
+
+        <!--
+          Watchdog crash/hang report viewer. Runs in its OWN process (:crash) so it can render
+          the report even after the main process dies in a crash. Only string/boolean attributes
+          are used here because ApkMixin's ManifestMerger writes enum/reference values (launchMode,
+          theme) as raw strings; the activity inherits the app theme and uses launchMode=standard.
+        -->
+        <activity
+            android:name="momoi.mod.qqpro.watchdog.CrashReportActivity"
+            android:process=":crash"
+            android:exported="false"
+            android:excludeFromRecents="true"
+            android:taskAffinity="momoi.mod.qqpro.crash" />
     </application>
 </manifest>

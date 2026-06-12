@@ -4,6 +4,7 @@ import android.os.Bundle
 import com.tencent.qqnt.watch.mainframe.MainActivity
 import momoi.anno.mixin.Mixin
 import momoi.mod.qqpro.ota.OTAManager2
+import momoi.mod.qqpro.watchdog.Watchdog
 
 /**
  * Update check on launch. Delegates to [OTAManager2], which queries the GitLab Releases API of
@@ -15,6 +16,7 @@ import momoi.mod.qqpro.ota.OTAManager2
 class 更新检查 : MainActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        Watchdog.install(this)
         OTAManager2(this).checkUpdate(false)
     }
 }

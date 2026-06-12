@@ -38,6 +38,9 @@ private val ACCENT = 0xFF_4FC3F7.toInt()
  * left-to-right swipe dismisses it (for watches without a back button).
  */
 class AboutFragment : MyDialogFragment() {
+    // Tapping the version line 5× opens the hidden watchdog test panel.
+    private var versionTaps = 0
+
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
@@ -76,6 +79,12 @@ class AboutFragment : MyDialogFragment() {
                 .textColor(0xFF_BBBBBB)
                 .gravity(Gravity.CENTER)
                 .padding(bottom = 12.dp)
+                .clickable {
+                    if (++versionTaps >= 5) {
+                        versionTaps = 0
+                        WatchdogTestFragment().show(childFragmentManager, "watchdog_test")
+                    }
+                }
 
             add<TextView>()
                 .text("NWear QQ · 爅峫\nQQ Pro · java30433\nQQ Max · AILIFE")
