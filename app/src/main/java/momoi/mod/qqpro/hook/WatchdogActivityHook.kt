@@ -130,6 +130,12 @@ class WatchdogActivityHook : com.tencent.qqnt.watch.mainframe.MainActivity() {
                 
                 root.addView(btnContainer1, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT))
                 
+                // Create and show dialog with max width constraint (before adding exit button)
+                val dialog = android.app.AlertDialog.Builder(this)
+                        .setView(root)
+                        .setCancelable(false)
+                        .create()
+                
                 // Second row: Exit button (full width)
                 root.addView(Button(this).apply {
                     text = "退出"
@@ -140,15 +146,9 @@ class WatchdogActivityHook : com.tencent.qqnt.watch.mainframe.MainActivity() {
                         topMargin = 6.dp
                     }
                     setOnClickListener {
-                        dialog?.dismiss()
+                        dialog.dismiss()
                     }
                 })
-                
-                // Create and show dialog with max width constraint
-                val dialog = android.app.AlertDialog.Builder(this)
-                        .setView(root)
-                        .setCancelable(false)
-                        .create()
                 
                 // Set responsive dialog dimensions
                 dialog.window?.apply {
