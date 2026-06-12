@@ -15,6 +15,7 @@ import momoi.mod.qqpro.enums.NTMsgType
 import momoi.mod.qqpro.hook.action.CurrentContact
 import momoi.mod.qqpro.hook.action.CurrentMsgList
 import momoi.mod.qqpro.lib.FILL
+import momoi.mod.qqpro.lib.Observable
 import momoi.mod.qqpro.lib.WRAP
 import momoi.mod.qqpro.util.Utils
 import momoi.mod.qqpro.warp
@@ -28,6 +29,14 @@ object PlusOneButton {
     private var attachedTo: WeakReference<AIOCellGroupWidget>? = null
     // Per-widget warp containers, created once on first qualifying bind.
     private val warps = WeakHashMap<AIOCellGroupWidget, LinearLayout>()
+    // msgId of the item each widget is currently bound to. Lets a list change (e.g. a
+    // recall) relocate the button to the new effective-last message's widget WITHOUT that
+    // cell having to rebind — the cell sitting before a recall graytip never rebinds, so
+    // bind() alone would leave the +1 stale.
+    private val boundMsgId = WeakHashMap<AIOCellGroupWidget, Long>()
+    // The msgList Observable instance we're subscribed to. It is replaced per chat
+    // (CurrentMsgList.Clear), so re-subscribe whenever it changes.
+    private var observed: Observable<MutableList<WatchAIOMsgItem>>? = null
 
     private fun msgText(item: WatchAIOMsgItem): String? {
         if (item.d.msgType == NTMsgType.GRAYTIPS) return null
@@ -38,18 +47,76 @@ object PlusOneButton {
         return text.takeIf { it.isNotEmpty() }
     }
 
+    // Index of the last real message, skipping trailing graytips (e.g. recall tips).
+    // A recall turns the original message into a graytip (msgType=5); the message that
+    // precedes it then becomes the effective latest message for +1 purposes.
+    private fun effectiveLastIndex(list: List<WatchAIOMsgItem>): Int {
+        for (i in list.indices.reversed()) {
+            if (list[i].d.msgType != NTMsgType.GRAYTIPS) return i
+        }
+        return -1
+    }
+
+    // Index of the last real (non-graytip) message strictly before [before]. Used to find
+    // the message to compare the latest one against, skipping any graytips in between.
+    private fun effectivePrevIndex(list: List<WatchAIOMsgItem>, before: Int): Int {
+        for (i in before - 1 downTo 0) {
+            if (list[i].d.msgType != NTMsgType.GRAYTIPS) return i
+        }
+        return -1
+    }
+
     private fun detach() {
         (button?.parent as? ViewGroup)?.removeView(button)
         attachedTo = null
     }
 
+    private fun ensureObserving() {
+        val cur = CurrentMsgList.msgList
+        if (observed === cur) return
+        observed = cur
+        // Re-evaluate the button placement on every list change (new msg, recall, delete).
+        cur.observe { refresh() }
+    }
+
+    // Re-evaluate +1 against the current list, independent of cell binds. Used when the
+    // list changes but the affected cell doesn't rebind (recall before the tail, etc.).
+    private fun refresh() {
+        val list = CurrentMsgList.msgList.value
+        val idx = effectiveLastIndex(list)
+        val text = if (idx >= 0) msgText(list[idx]) else null
+        val prevIdx = if (text != null) effectivePrevIndex(list, idx) else -1
+        val prevText = if (prevIdx >= 0) msgText(list[prevIdx]) else null
+        val shouldShow = text != null && text == prevText
+
+        Utils.log("+1 refresh: lastIdx=$idx/${list.size} shouldShow=$shouldShow")
+
+        if (!shouldShow) {
+            detach()
+            return
+        }
+        // Find the widget currently bound to the effective-last message (by stable msgId).
+        // If its cell isn't on screen yet, drop any stale button — bind() re-adds it when
+        // the cell binds.
+        val target = boundMsgId.entries.firstOrNull { it.value == list[idx].d.msgId }?.key
+        if (target == null) {
+            detach()
+            return
+        }
+        place(target, text!!)
+    }
+
     fun bind(widget: AIOCellGroupWidget, item: WatchAIOMsgItem) {
+        ensureObserving()
+        boundMsgId[widget] = item.d.msgId
+
         val list = CurrentMsgList.msgList.value
         val idx = list.indexOf(item)
-        val isLast = idx >= 0 && idx == list.size - 1
+        val isLast = idx >= 0 && idx == effectiveLastIndex(list)
 
         val text = if (isLast) msgText(item) else null
-        val prevText = if (text != null && idx > 0) msgText(list[idx - 1]) else null
+        val prevIdx = if (text != null) effectivePrevIndex(list, idx) else -1
+        val prevText = if (prevIdx >= 0) msgText(list[prevIdx]) else null
         val shouldShow = text != null && text == prevText
 
         Utils.log("+1 bind: idx=$idx/${list.size} isLast=$isLast shouldShow=$shouldShow")
@@ -58,7 +125,10 @@ object PlusOneButton {
             if (isLast || attachedTo?.get() === widget) detach()
             return
         }
+        place(widget, text!!)
+    }
 
+    private fun place(widget: AIOCellGroupWidget, text: String) {
         // Get or create the warp container for this widget's content.
         val warp = warps[widget] ?: run {
             val content = widget.getContentWidget<View>() as? TextView ?: return
@@ -88,10 +158,9 @@ object PlusOneButton {
         btn.visibility = View.VISIBLE
         attachedTo = WeakReference(widget)
 
-        val sendText = text
         btn.setOnClickListener {
-            Utils.log("+1: sending text=$sendText")
-            val elements = ImeTextUtil.a.b(sendText)
+            Utils.log("+1: sending text=$text")
+            val elements = ImeTextUtil.a.b(text)
             MsgUtil.msgService.sendMsg(
                 CurrentContact, 0L, elements,
                 IOperateCallback { code, errMsg -> Utils.log("+1 send result=$code $errMsg") }
