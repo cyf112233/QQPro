@@ -1,10 +1,9 @@
-package momoi.mod.qqpro.hook
+package byd.cxkcxkckx.watchdog
 
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Intent
 import android.os.Bundle
-import android.view.Gravity
 import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.ScrollView
@@ -49,16 +48,33 @@ class WatchdogActivityHook : com.tencent.qqnt.watch.mainframe.MainActivity() {
             val report = savedReport
             // Show modern dialog on the main thread with responsive layout
             runOnUiThread {
+                val displayMetrics = resources.displayMetrics
+                val screenWidth = displayMetrics.widthPixels
+                val screenHeight = displayMetrics.heightPixels
+                val shortSide = minOf(screenWidth, screenHeight)
+                val textScale = (shortSide / 360f).coerceIn(0.78f, 1.25f)
+                val titleTextSize = 18f * textScale
+                val messageTextSize = 13f * textScale
+                val reportTextSize = 11f * textScale
+                val buttonTextSize = 13f * textScale
+                val outerPadding = (16.dp * textScale).toInt().coerceAtLeast(8.dp)
+                val innerPadding = (8.dp * textScale).toInt().coerceAtLeast(6.dp)
+
                 val root = LinearLayout(this).apply {
                     orientation = LinearLayout.VERTICAL
                     setBackgroundColor(0xF0_1F1F1F.toInt())
-                    setPadding(16.dp, 16.dp, 16.dp, 16.dp)
+                    setPadding(outerPadding, outerPadding, outerPadding, outerPadding)
+                }
+
+                val dialogScroll = ScrollView(this).apply {
+                    isFillViewport = false
+                    addView(root, ScrollView.LayoutParams(ScrollView.LayoutParams.MATCH_PARENT, ScrollView.LayoutParams.WRAP_CONTENT))
                 }
                 
                 // Title
                 root.addView(TextView(this).apply {
-                    text = "上次使用时崩溃了"
-                    textSize = 18f
+                    text = "上次使用时崩溃了\n请提交报告"
+                    textSize = titleTextSize
                     setTextColor(0xFF_FFFFFF.toInt())
                     setPadding(0, 0, 0, 8.dp)
                 })
@@ -66,7 +82,7 @@ class WatchdogActivityHook : com.tencent.qqnt.watch.mainframe.MainActivity() {
                 // Message
                 root.addView(TextView(this).apply {
                     text = "请把以下报告发送给开发者"
-                    textSize = 13f
+                    textSize = messageTextSize
                     setTextColor(0xFF_BBBBBB.toInt())
                     setPadding(0, 0, 0, 12.dp)
                 })
@@ -77,17 +93,15 @@ class WatchdogActivityHook : com.tencent.qqnt.watch.mainframe.MainActivity() {
                 }
                 scroll.addView(TextView(this).apply {
                     text = report
-                    textSize = 11f
+                    textSize = reportTextSize
                     setTextColor(0xFF_DDDDDD.toInt())
-                    setPadding(8.dp, 8.dp, 8.dp, 8.dp)
+                    setPadding(innerPadding, innerPadding, innerPadding, innerPadding)
                     setBackgroundColor(0xFF_0D0D0D.toInt())
                 })
                 
                 // Calculate responsive height based on screen size
-                val displayMetrics = resources.displayMetrics
-                val screenHeight = displayMetrics.heightPixels
-                val maxScrollHeight = (screenHeight * 0.4).toInt()
-                val reportHeight = maxOf(100.dp, minOf(maxScrollHeight, 200.dp))
+                val maxScrollHeight = (screenHeight * 0.36f).toInt()
+                val reportHeight = maxOf((100.dp * textScale).toInt(), minOf(maxScrollHeight, (220.dp * textScale).toInt()))
                 
                 root.addView(scroll, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, reportHeight))
                 
@@ -99,9 +113,10 @@ class WatchdogActivityHook : com.tencent.qqnt.watch.mainframe.MainActivity() {
                 
                 btnContainer1.addView(Button(this).apply {
                     text = "复制报告"
+                    textSize = buttonTextSize
                     setTextColor(0xFF_FFFFFF.toInt())
                     setBackgroundColor(0xFF_2196F3.toInt())
-                    setPadding(8.dp, 8.dp, 8.dp, 8.dp)
+                    setPadding(innerPadding, innerPadding, innerPadding, innerPadding)
                     setOnClickListener {
                         val cm = getSystemService(ClipboardManager::class.java)
                         val clip = ClipData.newPlainText("Crash Report", report)
@@ -113,10 +128,11 @@ class WatchdogActivityHook : com.tencent.qqnt.watch.mainframe.MainActivity() {
                 })
                 
                 btnContainer1.addView(Button(this).apply {
-                    text = "分享"
+                    text = "分享报告"
+                    textSize = buttonTextSize
                     setTextColor(0xFF_FFFFFF.toInt())
                     setBackgroundColor(0xFF_4CAF50.toInt())
-                    setPadding(8.dp, 8.dp, 8.dp, 8.dp)
+                    setPadding(innerPadding, innerPadding, innerPadding, innerPadding)
                     setOnClickListener {
                         val share = Intent(Intent.ACTION_SEND)
                         share.type = "text/plain"
@@ -132,16 +148,17 @@ class WatchdogActivityHook : com.tencent.qqnt.watch.mainframe.MainActivity() {
                 
                 // Create and show dialog with max width constraint (before adding exit button)
                 val dialog = android.app.AlertDialog.Builder(this)
-                        .setView(root)
+                        .setView(dialogScroll)
                         .setCancelable(false)
                         .create()
                 
                 // Second row: Exit button (full width)
                 root.addView(Button(this).apply {
-                    text = "退出"
+                    text = "关闭弹窗"
+                    textSize = buttonTextSize
                     setTextColor(0xFF_FFFFFF.toInt())
                     setBackgroundColor(0xFF_F44336.toInt())
-                    setPadding(8.dp, 8.dp, 8.dp, 8.dp)
+                    setPadding(innerPadding, innerPadding, innerPadding, innerPadding)
                     layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply {
                         topMargin = 6.dp
                     }
@@ -151,14 +168,13 @@ class WatchdogActivityHook : com.tencent.qqnt.watch.mainframe.MainActivity() {
                 })
                 
                 // Set responsive dialog dimensions
+                dialog.show()
                 dialog.window?.apply {
                     setBackgroundDrawable(android.graphics.drawable.ColorDrawable(0xFF_1F1F1F.toInt()))
-                    val displayMetrics = resources.displayMetrics
-                    val screenWidth = displayMetrics.widthPixels
                     val dialogWidth = minOf(screenWidth - 32.dp, 600.dp)
-                    setLayout(dialogWidth, android.view.WindowManager.LayoutParams.WRAP_CONTENT)
+                    val dialogHeight = (screenHeight * 0.86f).toInt()
+                    setLayout(dialogWidth, dialogHeight)
                 }
-                dialog.show()
             }
             
             // Clear the report after showing
