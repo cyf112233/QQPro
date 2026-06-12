@@ -6,11 +6,11 @@ import android.content.Intent
 import android.os.Bundle
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
+import momoi.anno.mixin.Mixin
 import momoi.mod.qqpro.util.Utils
 import byd.cxkcxkckx.watchdog.CrashHandler
 import byd.cxkcxkckx.watchdog.HangWatcher
 import byd.cxkcxkckx.watchdog.CrashApplication
-import momoi.mod.qqpro.lib.Mixin
 
 /**
  * Hook into com.tencent.qqnt.watch.mainframe.MainActivity to:
