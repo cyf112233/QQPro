@@ -187,13 +187,14 @@ class WatchdogActivityHook : com.tencent.qqnt.watch.mainframe.MainActivity() {
                 
                 root.addView(btnContainer, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT))
                 
-                // Create and show dialog
-                val dialog = android.app.AlertDialog.Builder(this)
+                // Create and show report dialog
+                val createdReportDialog = android.app.AlertDialog.Builder(this)
                         .setView(root)
                         .setCancelable(false)
                         .create()
+                reportDialog = createdReportDialog
                 
-                // Exit button (add after dialog creation so it can reference the dialog)
+                // Exit button
                 btnContainer.addView(Button(this).apply {
                     text = "退出"
                     setTextColor(0xFF_FFFFFF.toInt())
@@ -206,16 +207,15 @@ class WatchdogActivityHook : com.tencent.qqnt.watch.mainframe.MainActivity() {
                 }, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f).apply {
                     marginStart = 4.dp
                 })
-                reportDialog = dialog
                 
                 // Set responsive dialog dimensions
-                dialog.window?.apply {
+                createdReportDialog.window?.apply {
                     setBackgroundDrawable(android.graphics.drawable.ColorDrawable(0xFF_1F1F1F.toInt()))
                     val screenWidth = resources.displayMetrics.widthPixels
                     val dialogWidth = minOf(screenWidth - 32.dp, 600.dp)
                     setLayout(dialogWidth, android.view.WindowManager.LayoutParams.WRAP_CONTENT)
                 }
-                dialog.show()
+                createdReportDialog.show()
             }
             
             // Clear the report after showing
