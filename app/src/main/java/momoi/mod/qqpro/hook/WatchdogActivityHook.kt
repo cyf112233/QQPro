@@ -47,12 +47,12 @@ class WatchdogActivityHook : com.tencent.qqnt.watch.mainframe.MainActivity() {
         if (savedReport != null) {
             Utils.log("$TAG: Found saved report from previous crash/hang, showing dialog")
             val report = savedReport
-            // Show modern dialog on the main thread
+            // Show modern dialog on the main thread with responsive layout
             runOnUiThread {
                 val root = LinearLayout(this).apply {
                     orientation = LinearLayout.VERTICAL
                     setBackgroundColor(0xF0_1F1F1F.toInt())
-                    setPadding(20.dp, 20.dp, 20.dp, 20.dp)
+                    setPadding(16.dp, 16.dp, 16.dp, 16.dp)
                 }
                 
                 // Title
@@ -60,39 +60,48 @@ class WatchdogActivityHook : com.tencent.qqnt.watch.mainframe.MainActivity() {
                     text = "上次使用时崩溃了"
                     textSize = 18f
                     setTextColor(0xFF_FFFFFF.toInt())
-                    setPadding(0, 0, 0, 12.dp)
+                    setPadding(0, 0, 0, 8.dp)
                 })
                 
                 // Message
                 root.addView(TextView(this).apply {
                     text = "请把以下报告发送给开发者"
-                    textSize = 14f
+                    textSize = 13f
                     setTextColor(0xFF_BBBBBB.toInt())
-                    setPadding(0, 0, 0, 16.dp)
+                    setPadding(0, 0, 0, 12.dp)
                 })
                 
-                // Report scroll
+                // Report scroll with responsive height
                 val scroll = ScrollView(this).apply {
                     isFillViewport = false
                 }
                 scroll.addView(TextView(this).apply {
                     text = report
-                    textSize = 12f
+                    textSize = 11f
                     setTextColor(0xFF_DDDDDD.toInt())
                     setPadding(8.dp, 8.dp, 8.dp, 8.dp)
                     setBackgroundColor(0xFF_0D0D0D.toInt())
                 })
-                root.addView(scroll, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 150.dp))
                 
-                // Buttons container
-                val btnContainer = LinearLayout(this).apply {
+                // Calculate responsive height based on screen size
+                val displayMetrics = resources.displayMetrics
+                val screenHeight = displayMetrics.heightPixels
+                val maxScrollHeight = (screenHeight * 0.4).toInt()
+                val reportHeight = maxOf(100.dp, minOf(maxScrollHeight, 200.dp))
+                
+                root.addView(scroll, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, reportHeight))
+                
+                // First row: Copy and Share buttons
+                val btnContainer1 = LinearLayout(this).apply {
                     orientation = LinearLayout.HORIZONTAL
-                    setPadding(0, 16.dp, 0, 0)
+                    setPadding(0, 12.dp, 0, 6.dp)
                 }
                 
-                // Copy button
-                btnContainer.addView(Button(this).apply {
+                btnContainer1.addView(Button(this).apply {
                     text = "复制报告"
+                    setTextColor(0xFF_FFFFFF.toInt())
+                    setBackgroundColor(0xFF_2196F3.toInt())
+                    setPadding(8.dp, 8.dp, 8.dp, 8.dp)
                     setOnClickListener {
                         val cm = getSystemService(ClipboardManager::class.java)
                         val clip = ClipData.newPlainText("Crash Report", report)
@@ -103,9 +112,11 @@ class WatchdogActivityHook : com.tencent.qqnt.watch.mainframe.MainActivity() {
                     rightMargin = 4.dp
                 })
                 
-                // Share button
-                btnContainer.addView(Button(this).apply {
+                btnContainer1.addView(Button(this).apply {
                     text = "分享"
+                    setTextColor(0xFF_FFFFFF.toInt())
+                    setBackgroundColor(0xFF_4CAF50.toInt())
+                    setPadding(8.dp, 8.dp, 8.dp, 8.dp)
                     setOnClickListener {
                         val share = Intent(Intent.ACTION_SEND)
                         share.type = "text/plain"
@@ -117,14 +128,36 @@ class WatchdogActivityHook : com.tencent.qqnt.watch.mainframe.MainActivity() {
                     leftMargin = 4.dp
                 })
                 
-                root.addView(btnContainer, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT))
+                root.addView(btnContainer1, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT))
                 
-                // Create and show dialog
+                // Second row: Exit button (full width)
+                root.addView(Button(this).apply {
+                    text = "退出"
+                    setTextColor(0xFF_FFFFFF.toInt())
+                    setBackgroundColor(0xFF_F44336.toInt())
+                    setPadding(8.dp, 8.dp, 8.dp, 8.dp)
+                    layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply {
+                        topMargin = 6.dp
+                    }
+                    setOnClickListener {
+                        dialog?.dismiss()
+                    }
+                })
+                
+                // Create and show dialog with max width constraint
                 val dialog = android.app.AlertDialog.Builder(this)
                         .setView(root)
                         .setCancelable(false)
                         .create()
-                dialog.window?.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(0xFF_1F1F1F.toInt()))
+                
+                // Set responsive dialog dimensions
+                dialog.window?.apply {
+                    setBackgroundDrawable(android.graphics.drawable.ColorDrawable(0xFF_1F1F1F.toInt()))
+                    val displayMetrics = resources.displayMetrics
+                    val screenWidth = displayMetrics.widthPixels
+                    val dialogWidth = minOf(screenWidth - 32.dp, 600.dp)
+                    setLayout(dialogWidth, android.view.WindowManager.LayoutParams.WRAP_CONTENT)
+                }
                 dialog.show()
             }
             

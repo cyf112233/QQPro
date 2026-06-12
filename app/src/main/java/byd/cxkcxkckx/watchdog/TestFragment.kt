@@ -69,7 +69,7 @@ class TestFragment : DialogFragment() {
         }
         
         // Crash Tests Section
-        addSection("💥 崩溃测试")
+        addSection(" 崩溃测试")
         
         addTestButton("NullPointerException") {
             val x: String? = null
@@ -95,7 +95,7 @@ class TestFragment : DialogFragment() {
         }
         
         // Hang Tests Section
-        addSection("⏸️ 卡死测试")
+        addSection(" 卡死测试")
         
         addTestButton("卡死 5 秒") {
             val end = System.currentTimeMillis() + 5000
@@ -119,7 +119,7 @@ class TestFragment : DialogFragment() {
         }
         
         // Thread Tests Section
-        addSection("🔗 线程测试")
+        addSection(" 线程测试")
         
         addTestButton("后台线程崩溃") {
             Thread {
