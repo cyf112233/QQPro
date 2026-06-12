@@ -8,8 +8,16 @@ import momoi.mod.qqpro.msg.getImageUrl
 import java.io.File
 import java.net.HttpURLConnection
 import java.net.URL
-import kotlin.concurrent.thread
+import java.util.concurrent.Executors
 import androidx.core.net.toUri
+
+// Bounded pool for image downloads. Each download holds a socket FD for up to the
+// connect timeout; spawning an unbounded thread per image (e.g. a chat list or member
+// picker loading dozens at once) exhausted the process FD limit → "Too many open files".
+// Capping concurrency caps the number of simultaneously open sockets.
+val downloadExecutor = Executors.newFixedThreadPool(4) { r ->
+    Thread(r, "qqpro-img-dl").apply { isDaemon = true }
+}
 
 // 抽取的加载图片 URL 的函数
 // onDone(success) is invoked on the UI thread once loading finishes (so callers can hide a
@@ -66,7 +74,7 @@ fun ImageView.loadErrorImage() {
 }
 
 inline fun download(rawUrl: String, file: File, crossinline callback: (Boolean) -> Unit) {
-    thread {
+    downloadExecutor.execute {
         var connection: HttpURLConnection? = null
         val uri = rawUrl.toUri()
         val url = if (uri.scheme.isNullOrEmpty()) {
