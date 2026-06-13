@@ -86,58 +86,84 @@ class 设置页 : SettingsActivity() {
         setContentView(swipeBack)
 
         root.content {
-            section("NWear QQ 设置", "基础版 by 爅峫")
-            switch("单行输入", "输入框固定为单行显示", Settings.singleLineInput)
-            switch("图片随消息发送", "发送文字时一并发送已选图片", Settings.sendWithImage)
-            switch("回复带艾特", "回复消息时自动艾特对方", Settings.replyWithAt)
-            switch("双击朗读", "双击消息朗读文本", Settings.doubleSpeak)
-            switch("双击回复", "双击消息进入回复", Settings.doubleReply)
-            switch("允许通知", "允许显示消息通知", Settings.allowNotification)
-            switch("常驻通知", "保留常驻通知（更耗电）", Settings.residentNotification)
-            textInput("语音键文字", "聊天页语音键上显示的文字", Settings.voiceBtnText)
+            section("NWear QQ Pro / Max", "by 爅峫 · java30433 · AILIFE")
 
-            section("QQ Pro 设置", "增强版 by java30433")
-            slider("缩放倍数", "整体界面缩放，返回聊天页即时生效", Settings.scale)
-            slider("聊天文本缩放", "聊天气泡内文字大小", Settings.chatScale)
-            switch("平滑表冠滚动", "表冠滚动没有动画时开启", Settings.enableSmoothScroll)
-            switch("屏蔽返回键", "用于把右滑当作返回的手表（如米兔）", Settings.blockBack)
-            switch("输入键居中", "在聊天页面将输入键居中放置", Settings.swapCenterKeyboard)
-
-            section("QQ Max 设置", "终极版 by AILIFE")
-            switch("群聊显示头像", "在群聊消息中显示用户头像和两行昵称", Settings.showGroupAvatar)
-            switch("自己也显示头像", "自己的消息也显示头像和两行昵称，与他人一致", Settings.showSelfAvatar)
-            slider("头像大小", "群聊头像大小(相对昵称文字的倍数)，默认 3", Settings.avatarSizeScale, min = 1.5f, max = 6f)
-            switch("合并连续消息头", "同一人连发多条时，只在第一条显示头像和昵称", Settings.hideRepeatedSender)
-            switch("行内发送按钮", "输入页将发送键移到输入框右侧，左侧加关闭键取消发送", Settings.inlineSendButton)
+            // ── 聊天输入 ── 输入框、发送方式与表情
+            section("聊天输入", "输入框、发送方式与表情")
             switch("聊天页直接输入", "在聊天页用输入框替换键盘键，有文字时麦克风键变发送键", Settings.inlineChatInput)
             switch("完全行内输入", "彻底不打开输入法页面：@、图片、回复、编辑、语音转文字都在输入框内完成。@xxx 与 [图片] 整体删除，回复/编辑在输入框上方显示横幅可点击取消(需开启“聊天页直接输入”)", Settings.fullInlineInput)
+            switch("行内发送按钮", "输入页将发送键移到输入框右侧，左侧加关闭键取消发送", Settings.inlineSendButton)
             switch("行内表情按钮", "聊天页输入有文字时左侧显示表情键，点击收起键盘弹出表情选择器插入表情，点输入框恢复键盘", Settings.inlineEmojiButton)
-            slider("屏幕圆角直径", "在输入框左右各留出此宽度的空白，避免圆屏圆角裁切两侧按钮", Settings.screenCornerDiameter, min = 0f, max = 48f)
-            switch("返回先回首页", "不在首页时按返回先滑回第一页，已在首页才退出", Settings.backToFirstPage)
             switch("附件浮层", "用输入框左侧 + 键打开附件浮层，移除附件翻页；表情移入附件列表(重进聊天页生效)", Settings.attachmentOverlay)
-            switch("富标题栏", "聊天顶部显示返回键、其它会话未读数、群成员数与群名(重进聊天页生效)", Settings.enableTitlebar)
-            switch("标题栏显示未读数", "在富标题栏显示其它会话的未读数红标(重进聊天页生效)", Settings.titlebarShowUnread)
-            switch("未读数浮在聊天左上角", "其它会话未读数红标浮在聊天页左上角而非标题栏内，无标题栏也可用(重进聊天页生效)", Settings.floatUnreadInChat)
-            slider("标题栏高度", "富标题栏高度(dp)，默认 16", Settings.titlebarHeight, min = 16f, max = 32f)
-            switch("主页导航在底部", "主页(会话列表)翻页指示器移到底部，并随标题栏高度放大", Settings.bottomMainNav)
-            switch("联系人分组", "联系人页用「好友」「群聊」标题分组，通知拆成好友/群两项各带数量，去掉群行末尾图标", Settings.contactSections)
-            switch("使用应用内相机", "开启后拍照/录像都用应用内相机，关闭后改用系统/第三方相机", Settings.useInAppCamera)
-            switch("相册按拍摄时间排序", "图片选择器按拍摄时间排序，关闭则按文件修改时间(默认)", Settings.gallerySortByDateTaken)
-            switch("使用系统图片选择器", "相册改用系统图片选择器/文件选择器，无需相册权限，可多选，修复部分设备问题", Settings.useSystemImagePicker)
-            switch("使用系统音频选择器", "音频文件改用系统文件选择器，关闭则用应用内音频浏览器(列出本机音频文件)", Settings.useSystemAudioPicker)
-            switch("点击链接确认", "点击消息中的链接时，弹窗询问是否用浏览器打开", Settings.confirmOpenLink)
-            switch("识别无前缀链接", "同时识别不带 http(s):// 的网址，如 example.com/x", Settings.wideUrlMatch)
-            switch("链接预览", "消息含链接时尝试解析网站图标、标题与简介，显示在消息下方", Settings.enableLinkPreview)
+            switch("单行输入", "输入框固定为单行显示", Settings.singleLineInput)
+            switch("输入键居中", "在聊天页面将输入键居中放置", Settings.swapCenterKeyboard)
+            switch("图片随消息发送", "发送文字时一并发送已选图片", Settings.sendWithImage)
+            switch("回复带艾特", "回复消息时自动艾特对方", Settings.replyWithAt)
+            slider("屏幕圆角直径", "在输入框左右各留出此宽度的空白，避免圆屏圆角裁切两侧按钮", Settings.screenCornerDiameter, min = 0f, max = 48f)
+            textInput("语音键文字", "聊天页语音键上显示的文字", Settings.voiceBtnText)
+
+            // ── 聊天显示 ── 缩放、气泡、图片与背景
+            section("聊天显示", "缩放、气泡、图片与背景")
+            slider("缩放倍数", "整体界面缩放，返回聊天页即时生效", Settings.scale)
+            slider("聊天文本缩放", "聊天气泡内文字大小", Settings.chatScale)
+            switch("双击朗读", "双击消息朗读文本", Settings.doubleSpeak)
+            switch("双击回复", "双击消息进入回复", Settings.doubleReply)
             slider("图片最大高度", "聊天图片最大显示高度(占屏幕高度比例)，默认 0.5", Settings.picMaxHeightRatio, min = 0.3f, max = 1f)
             slider("气泡圆角半径", "聊天气泡、合并转发/聊天记录块与回复块的圆角半径(dp)", Settings.bubbleCornerRadius, min = 0f, max = 24f)
             textInput("我的气泡颜色", "16进制如 #2B6CF6，留空为默认", Settings.bubbleColorSelf)
             textInput("对方气泡颜色", "16进制如 #2B6CF6，留空为默认", Settings.bubbleColorOther)
             chatBackgroundPicker()
             slider("背景变暗程度", "调暗背景图以便看清文字，重进聊天页生效", Settings.chatBgDarken, min = 0f, max = 0.9f)
+
+            // ── 群聊头像 ── 群聊中的头像与昵称
+            section("群聊头像", "群聊中的头像与昵称")
+            switch("群聊显示头像", "在群聊消息中显示用户头像和两行昵称", Settings.showGroupAvatar)
+            switch("自己也显示头像", "自己的消息也显示头像和两行昵称，与他人一致", Settings.showSelfAvatar)
+            slider("头像大小", "群聊头像大小(相对昵称文字的倍数)，默认 3", Settings.avatarSizeScale, min = 1.5f, max = 6f)
+            switch("合并连续消息头", "同一人连发多条时，只在第一条显示头像和昵称", Settings.hideRepeatedSender)
+
+            // ── 标题栏与未读 ── 聊天顶部标题栏
+            section("标题栏与未读", "聊天顶部标题栏")
+            switch("富标题栏", "聊天顶部显示返回键、其它会话未读数、群成员数与群名(重进聊天页生效)", Settings.enableTitlebar)
+            switch("标题栏显示未读数", "在富标题栏显示其它会话的未读数红标(重进聊天页生效)", Settings.titlebarShowUnread)
+            switch("未读数浮在聊天左上角", "其它会话未读数红标浮在聊天页左上角而非标题栏内，无标题栏也可用(重进聊天页生效)", Settings.floatUnreadInChat)
+            slider("标题栏高度", "富标题栏高度(dp)，默认 16", Settings.titlebarHeight, min = 16f, max = 32f)
+
+            // ── 导航与滚动 ── 翻页、返回与表冠
+            section("导航与滚动", "翻页、返回与表冠")
+            switch("主页导航在底部", "主页(会话列表)翻页指示器移到底部，并随标题栏高度放大", Settings.bottomMainNav)
+            switch("返回先回首页", "不在首页时按返回先滑回第一页，已在首页才退出", Settings.backToFirstPage)
+            switch("屏蔽返回键", "用于把右滑当作返回的手表（如米兔）", Settings.blockBack)
+            switch("平滑表冠滚动", "表冠滚动没有动画时开启", Settings.enableSmoothScroll)
+
+            // ── 通知与提醒 ── 消息通知、声音与震动
+            section("通知与提醒", "消息通知、声音与震动")
+            switch("允许通知", "允许显示消息通知", Settings.allowNotification)
+            switch("常驻通知", "保留常驻通知（更耗电）", Settings.residentNotification)
             selector("提醒声音", "新消息提示音：关闭 / 应用内音效 / 系统通知音", Settings.notifySoundMode,
                 listOf("关闭", "应用内", "系统"))
             selector("提醒震动", "新消息震动：关闭 / 应用内模式 / 系统模式", Settings.notifyVibrateMode,
                 listOf("关闭", "应用内", "系统"))
+
+            // ── 联系人 ── 联系人页面
+            section("联系人", "联系人页面")
+            switch("联系人分组", "联系人页用「好友」「群聊」标题分组，通知拆成好友/群两项各带数量，去掉群行末尾图标", Settings.contactSections)
+
+            // ── 相机与媒体 ── 拍照、相册与音频
+            section("相机与媒体", "拍照、相册与音频")
+            switch("使用应用内相机", "开启后拍照/录像都用应用内相机，关闭后改用系统/第三方相机", Settings.useInAppCamera)
+            switch("相册按拍摄时间排序", "图片选择器按拍摄时间排序，关闭则按文件修改时间(默认)", Settings.gallerySortByDateTaken)
+            switch("使用系统图片选择器", "相册改用系统图片选择器/文件选择器，无需相册权限，可多选，修复部分设备问题", Settings.useSystemImagePicker)
+            switch("使用系统音频选择器", "音频文件改用系统文件选择器，关闭则用应用内音频浏览器(列出本机音频文件)", Settings.useSystemAudioPicker)
+
+            // ── 链接 ── 消息中的网址
+            section("链接", "消息中的网址")
+            switch("点击链接确认", "点击消息中的链接时，弹窗询问是否用浏览器打开", Settings.confirmOpenLink)
+            switch("识别无前缀链接", "同时识别不带 http(s):// 的网址，如 example.com/x", Settings.wideUrlMatch)
+            switch("链接预览", "消息含链接时尝试解析网站图标、标题与简介，显示在消息下方", Settings.enableLinkPreview)
+
+            // ── 关于与更新 ──
+            section("关于与更新", "版本更新")
             switch("自动检查更新", "启动时检查 QQ Max 新版本，可在关于页手动检查", Settings.autoUpdateCheck)
 
             add<View>()
