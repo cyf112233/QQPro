@@ -175,7 +175,13 @@ object GroupAvatarHook {
     }
 
     private fun loadAvatarBitmap(uin: Long, callback: (Bitmap) -> Unit) {
-        val cacheDir = Utils.application.externalCacheDir ?: Utils.application.cacheDir
+        val cacheDir = Utils.application.externalCacheDir
+            ?: Utils.application.cacheDir
+            ?: Utils.application.filesDir
+        if (cacheDir == null) {
+            Utils.log("GroupAvatarHook: no cache dir available, skip avatar uin=$uin")
+            return
+        }
         val cacheFile = cacheDir.child("avatar_$uin.jpg")
         val url = "https://q.qlogo.cn/headimg_dl?dst_uin=$uin&spec=100"
         Utils.log("GroupAvatarHook: loading avatar uin=$uin")
