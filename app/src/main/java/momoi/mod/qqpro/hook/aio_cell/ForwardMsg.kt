@@ -36,6 +36,7 @@ import java.io.File
 import momoi.mod.qqpro.MsgUtil
 import momoi.mod.qqpro.Settings
 import momoi.mod.qqpro.child
+import momoi.mod.qqpro.safeCacheDir
 import momoi.mod.qqpro.drawable.roundCornerDrawable
 import momoi.mod.qqpro.hook.action.CurrentContact
 import momoi.mod.qqpro.hook.forwardText
@@ -129,7 +130,12 @@ private fun copyText(context: Context, text: CharSequence) {
 }
 
 private fun savePic(context: Context, pic: PicElement) {
-    val cacheFile = context.externalCacheDir!!.child("${pic.md5HexStr}.jpg")
+    val cacheDir = context.safeCacheDir
+    if (cacheDir == null) {
+        Utils.log("savePic: no cache dir available, skip")
+        return
+    }
+    val cacheFile = cacheDir.child("${pic.md5HexStr}.jpg")
     if (cacheFile.exists()) {
         RFWSaveUtil.a(context, cacheFile.path, null)
     } else {
@@ -149,7 +155,8 @@ private fun picLocalPath(context: Context, pic: PicElement): String? {
         .getOrNull()
         ?.takeIf { it.isNotEmpty() && File(it).exists() }
         ?.let { return it }
-    val cacheFile = context.externalCacheDir!!.child("${pic.md5HexStr}.jpg")
+    val cacheDir = context.safeCacheDir ?: return null
+    val cacheFile = cacheDir.child("${pic.md5HexStr}.jpg")
     return cacheFile.takeIf { it.exists() }?.path
 }
 
@@ -172,7 +179,12 @@ private fun fileMd5(file: File): String {
  * actually have and describe it with its own md5/size to keep the request self-consistent.
  */
 private fun saveFavEmoji(context: Context, pic: PicElement) {
-    val cacheFile = context.externalCacheDir!!.child("${pic.md5HexStr}.jpg")
+    val cacheDir = context.safeCacheDir
+    if (cacheDir == null) {
+        Utils.log("saveFavEmoji: no cache dir available, skip")
+        return
+    }
+    val cacheFile = cacheDir.child("${pic.md5HexStr}.jpg")
     if (cacheFile.exists()) {
         doAddFavEmoji(context, cacheFile)
     } else {

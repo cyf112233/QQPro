@@ -9,6 +9,7 @@ import com.tencent.qqnt.watch.contact.api.IContactRuntimeService
 import com.tencent.watch.ime.util.ImeTextUtil
 import momoi.mod.qqpro.MsgUtil
 import momoi.mod.qqpro.child
+import momoi.mod.qqpro.safeCacheDir
 import download
 import momoi.mod.qqpro.msg.getImageUrl
 import momoi.mod.qqpro.util.Utils
@@ -133,7 +134,13 @@ private fun rebuildForForward(elements: List<MsgElement>): ArrayList<MsgElement>
             out.add(ele)
             return@forEach
         }
-        val file = Utils.application.externalCacheDir!!.child("fwd_${System.currentTimeMillis()}_${pic.md5HexStr}.jpg")
+        val cacheDir = Utils.application.safeCacheDir
+        if (cacheDir == null) {
+            Utils.log("forwardMsgRecord: no cache dir available, sending original element")
+            out.add(ele)
+            return@forEach
+        }
+        val file = cacheDir.child("fwd_${System.currentTimeMillis()}_${pic.md5HexStr}.jpg")
         val latch = CountDownLatch(1)
         var ok = false
         download(url, file) { ok = it; latch.countDown() }

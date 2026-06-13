@@ -53,6 +53,13 @@ fun String?.emptyUse(other: String) = if (isNullOrEmpty()) other else this
 
 fun File.child(path: String) = File(this, path)
 
+/**
+ * Best-effort cache directory. On some ROMs (e.g. XTC watches) externalCacheDir can be
+ * null when external storage isn't mounted, so fall back to internal cache then filesDir.
+ */
+val android.content.Context.safeCacheDir: File?
+    get() = externalCacheDir ?: cacheDir ?: filesDir
+
 fun <T> Class<T>.findMethod(name: String, args: List<Class<Any>>? = null): Method {
     return try {
         if (args == null) getDeclaredMethod(name)

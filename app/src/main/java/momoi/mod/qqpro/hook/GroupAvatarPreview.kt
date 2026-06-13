@@ -7,6 +7,7 @@ import com.tencent.watch.aio_impl.ui.frames.SettingFrame
 import download
 import momoi.anno.mixin.Mixin
 import momoi.mod.qqpro.child
+import momoi.mod.qqpro.safeCacheDir
 import momoi.mod.qqpro.hook.view.addChatSearchEntry
 import momoi.mod.qqpro.util.Utils
 import momoi.mod.qqpro.util.runOnUi
@@ -37,7 +38,12 @@ class GroupAvatarPreview : SettingFrame() {
 private fun bindGroupAvatarPreview(fragment: SettingFrame, avatarView: View, groupCode: String) {
     avatarView.setOnClickListener {
         val ctx = avatarView.context
-        val cacheFile = ctx.externalCacheDir!!.child("group_avatar_$groupCode.jpg")
+        val cacheDir = ctx.safeCacheDir
+        if (cacheDir == null) {
+            Utils.log("GroupAvatarPreview: no cache dir available, skip")
+            return@setOnClickListener
+        }
+        val cacheFile = cacheDir.child("group_avatar_$groupCode.jpg")
         val show = {
             val host = WatchPicElementExtKt.X(fragment)
             if (host == null) {

@@ -3,6 +3,7 @@ import android.widget.ImageView
 import com.tencent.qqnt.kernel.nativeinterface.PicElement
 import momoi.mod.qqpro.util.Utils
 import momoi.mod.qqpro.child
+import momoi.mod.qqpro.safeCacheDir
 import momoi.mod.qqpro.lib.bitmapDecodeFile
 import momoi.mod.qqpro.msg.getImageUrl
 import java.io.File
@@ -66,13 +67,6 @@ fun ImageView.loadPicElement(pic: PicElement, onDone: ((Boolean) -> Unit)? = nul
     // 调用抽取的函数
     loadPicUrl(pic.getImageUrl(), pic.md5HexStr, onDone)
 }
-
-/**
- * Best-effort cache directory. On some ROMs (e.g. XTC watches) externalCacheDir can be
- * null when external storage isn't mounted, so fall back to internal cache then filesDir.
- */
-val android.content.Context.safeCacheDir: File?
-    get() = externalCacheDir ?: cacheDir ?: filesDir
 
 /** Show the fallback "broken image" placeholder. */
 fun ImageView.loadErrorImage() {

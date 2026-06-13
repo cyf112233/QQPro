@@ -16,6 +16,7 @@ import com.tencent.mobileqq.widget.QQToast
 import com.tencent.qphone.base.util.QLog
 import com.tencent.mobileqq.utils.TimeFormatterUtils
 import androidx.core.net.toUri
+import momoi.mod.qqpro.safeCacheDir
 
 object Utils {
     @SuppressLint("PrivateApi")
@@ -55,7 +56,9 @@ object Utils {
     }
 
     private val debugLogFile by lazy {
-        java.io.File(application.externalCacheDir, "qqpro_debug.log")
+        // externalCacheDir can be null on some ROMs (external storage unmounted); fall back
+        // so the log still lands somewhere writable instead of a relative (unwritable) path.
+        java.io.File(application.safeCacheDir, "qqpro_debug.log")
     }
 
     fun log(msg: String) {
