@@ -27,6 +27,10 @@ object Settings {
     val hideRepeatedSender = BooleanPref("hideRepeatedSender", true)
     val inlineSendButton = BooleanPref("inlineSendButton", true)
     val inlineChatInput = BooleanPref("inlineChatInput", true)
+    // Fully replace the InputMethodFragment with the inline EditText: @/图片/回复/编辑/STT
+    // are all represented inline (atomic @xxx and [图片] spans, a reply/edit banner above the
+    // input box) so the keyboard page never opens. Requires inlineChatInput.
+    val fullInlineInput = BooleanPref("fullInlineInput", false)
     // Show an emoji button in the inline input pill while typing. Tapping it collapses the keyboard
     // and opens a sysface picker at the keyboard position that inserts faces into the EditText.
     val inlineEmojiButton = BooleanPref("inlineEmojiButton", false)

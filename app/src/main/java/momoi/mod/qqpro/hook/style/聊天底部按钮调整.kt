@@ -29,6 +29,7 @@ import momoi.mod.qqpro.drawable.roundCornerDrawable
 import momoi.mod.qqpro.drawable.sendIconDrawable
 import momoi.mod.qqpro.hook.AttachmentOverlay
 import momoi.mod.qqpro.hook.InlineEmojiPanel
+import momoi.mod.qqpro.hook.InlineInput
 import momoi.mod.qqpro.hook.action.CurrentContact
 import momoi.mod.qqpro.lib.FILL
 import momoi.mod.qqpro.lib.ImeEditText
@@ -45,6 +46,7 @@ import momoi.mod.qqpro.lib.gravity
 import momoi.mod.qqpro.lib.height
 import momoi.mod.qqpro.lib.hint
 import momoi.mod.qqpro.lib.imageResource
+import momoi.mod.qqpro.lib.longClickable
 import momoi.mod.qqpro.lib.margin
 import momoi.mod.qqpro.lib.marginHorizontal
 import momoi.mod.qqpro.lib.onFocusChange
@@ -119,6 +121,13 @@ class 聊天底部按钮调整() : `InputBarController$inputContent$2`() {
                                 .bitmapDecodeAssets("pro/ic_emoji.png")
                             emojiToggle.visibility = View.GONE
                             emojiToggle.clickable { InlineEmojiPanel.toggle(editText) }
+                            // Long-press the typing emoji key to open the attachment overlay (+ menu)
+                            // and collapse the keyboard, mirroring the "+" button's behaviour.
+                            emojiToggle.longClickable {
+                                InlineEmojiPanel.dismiss()
+                                hideIme(emojiToggle)
+                                AttachmentOverlay.show(emojiToggle, emoji)
+                            }
                             editText = add<ImeEditText>().height(FILL).weight(1f)
                                 .background(null)
                                 .paddingHorizontal(4.dp)
@@ -135,7 +144,10 @@ class 聊天底部按钮调整() : `InputBarController$inputContent$2`() {
                             add(voice.background(null))
                             add(send)
                         }
-                        send.clickable { sendInline(editText) }
+                        send.clickable {
+                            if (Settings.fullInlineInput.value) InlineInput.send()
+                            else sendInline(editText)
+                        }
                         editText.doAfterTextChanged {
                             // Use isNullOrEmpty (not isNullOrBlank): a space is real content the
                             // user typed (the hint already disappeared), so it must flip to send.
@@ -148,6 +160,11 @@ class 聊天底部按钮调整() : `InputBarController$inputContent$2`() {
                             voice.visibility = if (hasText) View.GONE else View.VISIBLE
                             send.visibility = if (hasText) View.VISIBLE else View.GONE
                             if (!emojiMode) InlineEmojiPanel.dismiss()
+                        }
+                        if (Settings.fullInlineInput.value) {
+                            // The reply/edit banner is a floating overlay above the bar (InlineInput
+                            // manages it) so it never shrinks the input box.
+                            InlineInput.register(editText, b)
                         }
                         add(pill.marginHorizontal(sideSpaceDp.dp))
                     } else {
