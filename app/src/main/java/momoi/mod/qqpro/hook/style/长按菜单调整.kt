@@ -11,6 +11,7 @@ import android.widget.TextView
 import androidx.appcompat.widget.AppCompatTextView
 import androidx.core.content.ContextCompat
 import androidx.core.view.forEach
+import androidx.fragment.app.FragmentManager
 import com.tencent.qqnt.kernel.nativeinterface.Contact
 import com.tencent.qqnt.kernel.nativeinterface.IOperateCallback
 import com.tencent.qqnt.kernel.nativeinterface.MemberRole
@@ -26,6 +27,7 @@ import momoi.mod.qqpro.hook.HistoryMsgRegistry
 import momoi.mod.qqpro.hook.forwardText
 import momoi.mod.qqpro.hook.forwardMsgRecord
 import momoi.mod.qqpro.hook.shareMessage
+import momoi.mod.qqpro.hook.view.PartialCopyFragment
 import momoi.mod.qqpro.asGroup
 import momoi.mod.qqpro.drawable.editIconDrawable
 import momoi.mod.qqpro.drawable.recallIconDrawable
@@ -80,7 +82,7 @@ private fun cloneMenuItem(
     return itemView
 }
 
-private fun process(group: ViewGroup, msg: MsgRecord?, msgItem: WatchAIOMsgItem?, dismiss: () -> Unit) {
+private fun process(group: ViewGroup, msg: MsgRecord?, msgItem: WatchAIOMsgItem?, fm: FragmentManager?, dismiss: () -> Unit) {
     group.removeViewAt(0)
     val linear = group.getChildAt(0).asGroup()
         .getChildAt(0).asGroup()
@@ -147,6 +149,22 @@ private fun process(group: ViewGroup, msg: MsgRecord?, msgItem: WatchAIOMsgItem?
             Utils.copyToClipboard(it.context, fwdText)
             dismiss()
         }
+    }
+    // 部分复制：原生"复制文本"一次复制整条消息，这里打开一个可自由选择文本的页面，
+    // 让用户长按选取消息中的任意片段再复制(系统选择工具栏)。放在复制旁边。
+    // 复用原生"复制文本"行的图标，使新增项与其视觉一致。
+    if (fwdText != null && fm != null) {
+        val copyIcon = items["复制文本"]?.let { item ->
+            val res = item.context.resources
+            val pkg = item.context.packageName
+            item.findViewById<ImageView>(res.getIdentifier("icon", "id", pkg))?.drawable
+        }
+        linear.addView(cloneMenuItem(linear, "部分复制", copyIcon) {
+            runCatching {
+                PartialCopyFragment(fwdText).show(fm, "qqpro_partial_copy")
+            }.onFailure { Utils.log("partial copy open failed: $it") }
+            dismiss()
+        }, 1)
     }
     // 删除(本地删除，非撤回)：原生删除只更新数据库，当前会话列表不会实时刷新(需重进会话)。
     // 自行调用 deleteMsg(与原生一致：本地删除、无确认框)，并在成功回调里把该消息实时移除。
@@ -270,9 +288,11 @@ class 长按菜单调整(p0: (MenuItemFactory.ItemEnum) -> Unit, p1: String?) :
         // the history registry (no WatchAIOMsgItem available there, so msgItem stays null).
         val msg = item?.d ?: HistoryMsgRegistry.find(arguments?.getLong("key_msg_id") ?: 0L)
         Utils.log("menu: msg=${msg != null} msgId=${arguments?.getLong("key_msg_id")}")
+        // The menu is hosted on this FragmentManager; show 部分复制 on the same one after we dismiss.
+        val fm = runCatching { parentFragmentManager }.getOrNull()
         return super.onCreateView(inflater, container, savedInstanceState).apply {
             this.asGroup().getChildAt(0).asGroup().let { group ->
-                process(group, msg, item) { dismiss() }
+                process(group, msg, item, fm) { dismiss() }
             }
         }
     }
