@@ -102,6 +102,8 @@ object Settings {
     // Automatically check for a new QQ Max release on launch (via OTAManager2). Backed by
     // OTAManager2's own prefs so the toggle and the dialog's "不再提醒" share one state.
     val autoUpdateCheck = OtaBooleanPref("update_check_enabled", true)
+    // Intercept recall requests so withdrawn messages stay visible in the chat list.
+    val antiRecall = BooleanPref("antiRecall", true)
 
     // ===== NWear QQ 设置 (by 爅峫) — backed by the base app's "wearqq" prefs =====
     val singleLineInput = WearBooleanPref("single_line_input", false)

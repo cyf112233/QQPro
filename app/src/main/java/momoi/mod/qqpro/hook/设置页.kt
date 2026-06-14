@@ -162,6 +162,10 @@ class 设置页 : SettingsActivity() {
             switch("识别无前缀链接", "同时识别不带 http(s):// 的网址，如 example.com/x", Settings.wideUrlMatch)
             switch("链接预览", "消息含链接时尝试解析网站图标、标题与简介，显示在消息下方", Settings.enableLinkPreview)
 
+            // ── 高级功能（by cxkcxkckx） ── 撤回相关补丁
+            section("高级功能（by cxkcxkckx）", "撤回等需要更谨慎的补丁")
+            switch("防撤回", "拦截消息撤回请求，保留原消息", Settings.antiRecall)
+
             // ── 关于与更新 ──
             section("关于与更新", "版本更新")
             switch("自动检查更新", "启动时检查 QQ Max 新版本，可在关于页手动检查", Settings.autoUpdateCheck)
