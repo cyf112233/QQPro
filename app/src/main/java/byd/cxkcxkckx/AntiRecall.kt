@@ -10,12 +10,12 @@ import momoi.mod.qqpro.util.Utils
 @Mixin
 class AntiRecall : MsgServiceImpl() {
     override fun deleteRecallMsg(
-        contact: Contact,
+        contact: Contact?,
         msgId: Long,
         callback: IOperateCallback?
     ) {
         if (Settings.antiRecall.value) {
-            Utils.log("AntiRecall: block deleteRecallMsg peer=${contact.peerUid} msgId=$msgId")
+            Utils.log("AntiRecall: block deleteRecallMsg peer=${contact?.peerUid} msgId=$msgId")
             callback?.onResult(0, "")
             return
         }
@@ -23,12 +23,12 @@ class AntiRecall : MsgServiceImpl() {
     }
 
     override fun deleteRecallMsgForLocal(
-        contact: Contact,
+        contact: Contact?,
         msgId: Long,
         callback: IOperateCallback?
     ) {
         if (Settings.antiRecall.value) {
-            Utils.log("AntiRecall: block deleteRecallMsgForLocal peer=${contact.peerUid} msgId=$msgId")
+            Utils.log("AntiRecall: block deleteRecallMsgForLocal peer=${contact?.peerUid} msgId=$msgId")
             callback?.onResult(0, "")
             return
         }

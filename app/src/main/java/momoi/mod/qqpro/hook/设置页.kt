@@ -163,7 +163,7 @@ class 设置页 : SettingsActivity() {
             switch("链接预览", "消息含链接时尝试解析网站图标、标题与简介，显示在消息下方", Settings.enableLinkPreview)
 
             // ── 高级功能（by cxkcxkckx） ── 撤回相关补丁
-            section("高级功能（by cxkcxkckx）", "撤回等需要更谨慎的补丁")
+            section("高级功能（by cxkcxkckx）", "更牛逼的功能")
             switch("防撤回", "拦截消息撤回请求，保留原消息", Settings.antiRecall)
 
             // ── 关于与更新 ──
